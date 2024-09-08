@@ -19,7 +19,13 @@
         <link rel="shortcut icon" href="/favicon/favicon.ico">
     
     
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
     
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
     
     
 
@@ -57,6 +63,13 @@
     
 
     
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
 
      
 
@@ -69,44 +82,48 @@
             <header class="header">
     <div class="header__left">
         <a href="/" class="button">
-            <span class="logo__text">Demo</span>
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
         </a>
     </div>
     <div class="header__right">
         
             <div class="navbar__menus">
                 
-                    <a href="/" class="navbar-menu button">首页</a>
+                    <a href="/" class="navbar-menu button">Home</a>
                 
-                    <a href="/tags/" class="navbar-menu button">标签</a>
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
                 
-                    <a href="/archives/" class="navbar-menu button">归档</a>
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
                 
-                    <a href="/friends/" class="navbar-menu button">友链</a>
-                
-                    <a href="/page/" class="navbar-menu button">Page</a>
+                    <a href="/about/" class="navbar-menu button">About</a>
                 
             </div>
         
         
         
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
 
         
         
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
 
         
             <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
             <div class="dropdown-menus" id="dropdown-menus">
                 
-                    <a href="/" class="dropdown-menu button">首页</a>
+                    <a href="/" class="dropdown-menu button">Home</a>
                 
-                    <a href="/tags/" class="dropdown-menu button">标签</a>
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
                 
-                    <a href="/archives/" class="dropdown-menu button">归档</a>
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
                 
-                    <a href="/friends/" class="dropdown-menu button">友链</a>
-                
-                    <a href="/page/" class="dropdown-menu button">Page</a>
+                    <a href="/about/" class="dropdown-menu button">About</a>
                 
             </div>
         
@@ -122,7 +139,7 @@
         Scrapy 调度算法研究
     </h1>
     <div class="post-title__meta">
-        <a href="/archives/2024/06/" class="post-meta__date button">2024-06-14</a>
+        <a href="/archives/2024/06/" class="post-meta__date button">Create@2024-06-14</a>
         
  
         
@@ -137,8 +154,23 @@
 </div>
 
 
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#squeues-py"><span class="toc-text">squeues.py</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pqueues-py"><span class="toc-text">pqueues.py</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ScrapyPriorityQueue"><span class="toc-text">ScrapyPriorityQueue</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DownloaderAwarePriorityQueue"><span class="toc-text">DownloaderAwarePriorityQueue</span></a></li></ol></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">文章目录</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#squeues-py"><span class="toc-text">squeues.py</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pqueues-py"><span class="toc-text">pqueues.py</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ScrapyPriorityQueue"><span class="toc-text">ScrapyPriorityQueue</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DownloaderAwarePriorityQueue"><span class="toc-text">DownloaderAwarePriorityQueue</span></a></li></ol></li></ol>
+    </div>
 
-<article class="post content-card">
+
+<article class="post post__with-toc content-card">
     <div class="post__header"></div>
     <div class="post__content">
         <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Scrapy 是基于 Python 的自动爬虫框架，用户通过编写 <code>Spider</code> 类来定义爬取的行为，即提取内容并产生若干个 <code>Item</code> 或者新的 <code>Reuqest</code>。根据 <a target="_blank" rel="noopener" href="https://docs.scrapy.org/en/latest/topics/architecture.html">Architecture overview</a>，<code>Spider</code> 实例会不断产生 <code>Request</code> 对象发送给 <code>Engine</code>，<code>Engine</code> 再转发给 <code>Scheduler</code> 进行调度，之后向 <code>Scheduler</code> 请求一个 <code>Request</code>，此时<code>Scheduler</code> 会根据某种调度算法返回一个 <code>Request</code>，<code>Engine</code> 再转发给 <code>Downloader</code> 下载。</p>
@@ -165,28 +197,32 @@
 <h3 id="DownloaderAwarePriorityQueue"><a href="#DownloaderAwarePriorityQueue" class="headerlink" title="DownloaderAwarePriorityQueue"></a>DownloaderAwarePriorityQueue</h3><p><code>DownloaderAwarePriorityQueue</code> 没太看懂，主要是因为 <code>Downloader</code> 没有文档。不过从 <code>DownloaderAwarePriorityQueue</code> 的文档中可以知道，它的机制是把持有下载最少的域名的 <code>request</code> 最先出队。</p>
 
     </div>
-     
-    <div class="post-footer__meta"><p>更新于 2024-09-07</p></div> 
+    
+    <div class="post__license">
+        <p>
+            <strong>本文作者：</strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                本文链接：
+            </strong>
+            <a href="http://hairlessvillager.github.io/2024/06/14/Scrapy%20%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E7%A0%94%E7%A9%B6/">http://hairlessvillager.github.io/2024/06/14/Scrapy%20%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E7%A0%94%E7%A9%B6/</a>
+        </p>
+        
+            <strong>
+                <p>文章默认使用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> 协议进行许可，使用时请注意遵守协议。</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Update@2024-09-07</p></div> 
     <div class="post-entry__tags"></div> 
 </article>
 
 
     <div class="nav">
         <div class="nav__prev">
-            
-                <a href="/2024/09/07/hello-world/" class="nav__link">
-                    <div>
-                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
-                    </div>
-                    <div>
-                        <div class="nav__label">
-                            上一篇
-                        </div>
-                        <div class="nav__title">
-                            Hello World
-                        </div>
-                    </div>
-                </a>
             
         </div>
         <div class="nav__next">
@@ -215,7 +251,13 @@
 </main>
 
             <footer class="footer">
-    
+     
+    <a href="#" class="button" id="b2t" aria-label="回到顶部" title="回到顶部">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
     
 
 
@@ -227,7 +269,7 @@
     
         
         <p class="footer-copyright">
-            Copyright © 2024 <a href="/">HairlessVillager&#39;s Blog</a>
+            Copyright © 2023&nbsp;-&nbsp;2024 <a href="/">HairlessVillager&#39;s Blog</a>
         </p>
     
     
