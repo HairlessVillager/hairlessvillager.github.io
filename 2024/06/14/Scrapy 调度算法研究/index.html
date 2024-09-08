@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+    
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>Scrapy 调度算法研究 | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="背景Scrapy 是基于 Python 的自动爬虫框架，用户通过编写 Spider 类来定义爬取的行为，即提取内容并产生若干个 Item 或者新的 Reuqest。根据 Architecture overview，Spider 实例会不断产生 Request 对象发送给 Engine，Engine 再转发给 Scheduler 进行调度，之后向 Scheduler 请求一个 Request，此时S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Scrapy 调度算法研究">
+<meta property="og:url" content="http://hairlessvillager.github.io/2024/06/14/Scrapy%20%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E7%A0%94%E7%A9%B6/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="背景Scrapy 是基于 Python 的自动爬虫框架，用户通过编写 Spider 类来定义爬取的行为，即提取内容并产生若干个 Item 或者新的 Reuqest。根据 Architecture overview，Spider 实例会不断产生 Request 对象发送给 Engine，Engine 再转发给 Scheduler 进行调度，之后向 Scheduler 请求一个 Request，此时S">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-06-14T07:15:00.000Z">
+<meta property="article:modified_time" content="2024-09-07T15:26:35.740Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+    
+
+    
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">Demo</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">首页</a>
+                
+                    <a href="/tags/" class="navbar-menu button">标签</a>
+                
+                    <a href="/archives/" class="navbar-menu button">归档</a>
+                
+                    <a href="/friends/" class="navbar-menu button">友链</a>
+                
+                    <a href="/page/" class="navbar-menu button">Page</a>
+                
+            </div>
+        
+        
+        
+
+        
+        
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">首页</a>
+                
+                    <a href="/tags/" class="dropdown-menu button">标签</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">归档</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">友链</a>
+                
+                    <a href="/page/" class="dropdown-menu button">Page</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        Scrapy 调度算法研究
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2024/06/" class="post-meta__date button">2024-06-14</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+
+<article class="post content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Scrapy 是基于 Python 的自动爬虫框架，用户通过编写 <code>Spider</code> 类来定义爬取的行为，即提取内容并产生若干个 <code>Item</code> 或者新的 <code>Reuqest</code>。根据 <a target="_blank" rel="noopener" href="https://docs.scrapy.org/en/latest/topics/architecture.html">Architecture overview</a>，<code>Spider</code> 实例会不断产生 <code>Request</code> 对象发送给 <code>Engine</code>，<code>Engine</code> 再转发给 <code>Scheduler</code> 进行调度，之后向 <code>Scheduler</code> 请求一个 <code>Request</code>，此时<code>Scheduler</code> 会根据某种调度算法返回一个 <code>Request</code>，<code>Engine</code> 再转发给 <code>Downloader</code> 下载。</p>
+<p><a target="_blank" rel="noopener" href="https://docs.scrapy.org/en/latest/topics/scheduler.html#default-scrapy-scheduler"><code>Scheduler</code></a> 在初始化的时候有 3 个队列类的参数，分别是 <code>dqclass</code>、<code>mqclass</code>、<code>pqclass</code>，类型提示都是 <code>class</code>。文档提供的默认值也没有用。在 GitHub 上找到了源代码才发现前面两个都是在 <a target="_blank" rel="noopener" href="https://github.com/scrapy/scrapy/blob/master/scrapy/squeues.py#L159">squeues.py</a> 里动态定义的，而 <code>pqclass</code> 定义在 <a target="_blank" rel="noopener" href="https://github.com/scrapy/scrapy/blob/master/scrapy/pqueues.py">pqueues.py</a>。</p>
+<h2 id="squeues-py"><a href="#squeues-py" class="headerlink" title="squeues.py"></a>squeues.py</h2><p>观察前面的几个 import 语句：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> marshal</span><br><span class="line"><span class="keyword">import</span> pickle  <span class="comment"># nosec</span></span><br><span class="line"><span class="keyword">from</span> os <span class="keyword">import</span> PathLike</span><br><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TYPE_CHECKING, <span class="type">Any</span>, <span class="type">Callable</span>, <span class="type">Optional</span>, <span class="type">Type</span>, <span class="type">Union</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> queuelib <span class="keyword">import</span> queue</span><br></pre></td></tr></table></figure>
+
+<p>大致猜到这个文件作用大概是定义了一些常用的队列。<a target="_blank" rel="noopener" href="https://docs.python.org/zh-cn/3/library/marshal.html">marshal</a> 和 <a target="_blank" rel="noopener" href="https://docs.python.org/zh-cn/3/library/pickle.html">pickle</a> 都是和序列化相关的库。<a target="_blank" rel="noopener" href="https://github.com/scrapy/queuelib">queuelib</a> 定义了一些常用的队列。</p>
+<p>稍微解读一下其中的函数：</p>
+<ul>
+<li><code>_with_mkdir</code>：类装饰器，给 disk-based 队列用的，作用是确认文件夹的存在，若不存在则创建文件夹。</li>
+<li><code>_serializable_queue</code>：类装饰器，在入队、出队的时候进行序列化、反序列化操作。</li>
+<li><code>_scrapy_serialization_queue</code>：<code>_serializable_queue</code> 的 Scrapy 定制版，主要是把类型注解换成了 <code>Request</code>，然后在序列化的时候使用了 <code>Request.to_dict</code> 和 <code>request_from_dict</code> 方法。</li>
+<li><code>_scrapy_non_serialization_queue</code>：<code>_scrapy_serialization_queue</code> 的无序列化操作版本。</li>
+<li><code>_pickle_serialize</code>：对 <code>pickle.dumps</code> 可能抛出的异常简单封装了一下。</li>
+</ul>
+<p>以上函数最终产出了以下几个类：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># queue.*Queue aren&#x27;t subclasses of queue.BaseQueue</span></span><br><span class="line">_PickleFifoSerializationDiskQueue = _serializable_queue(</span><br><span class="line">    _with_mkdir(queue.FifoDiskQueue), _pickle_serialize, pickle.loads  <span class="comment"># type: ignore[arg-<span class="built_in">type</span>]</span></span><br><span class="line">)</span><br><span class="line">_PickleLifoSerializationDiskQueue = _serializable_queue(</span><br><span class="line">    _with_mkdir(queue.LifoDiskQueue), _pickle_serialize, pickle.loads  <span class="comment"># type: ignore[arg-<span class="built_in">type</span>]</span></span><br><span class="line">)</span><br><span class="line">_MarshalFifoSerializationDiskQueue = _serializable_queue(</span><br><span class="line">    _with_mkdir(queue.FifoDiskQueue), marshal.dumps, marshal.loads  <span class="comment"># type: ignore[arg-<span class="built_in">type</span>]</span></span><br><span class="line">)</span><br><span class="line">_MarshalLifoSerializationDiskQueue = _serializable_queue(</span><br><span class="line">    _with_mkdir(queue.LifoDiskQueue), marshal.dumps, marshal.loads  <span class="comment"># type: ignore[arg-<span class="built_in">type</span>]</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># public queue classes</span></span><br><span class="line">PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQueue)</span><br><span class="line">PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)</span><br><span class="line">MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDiskQueue)</span><br><span class="line">MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)</span><br><span class="line">FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)  <span class="comment"># type: ignore[arg-<span class="built_in">type</span>]</span></span><br><span class="line">LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)  <span class="comment"># type: ignore[arg-<span class="built_in">type</span>]</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到都是非常基本的 FIFO 或者 LIFO 队列。</p>
+<h2 id="pqueues-py"><a href="#pqueues-py" class="headerlink" title="pqueues.py"></a>pqueues.py</h2><p>这个文件定义了基于优先级的优先队列。主要定义了 <code>ScrapyPriorityQueue</code> 和 <code>DownloaderAwarePriorityQueue</code> 两个类。</p>
+<h3 id="ScrapyPriorityQueue"><a href="#ScrapyPriorityQueue" class="headerlink" title="ScrapyPriorityQueue"></a>ScrapyPriorityQueue</h3><p><code>ScrapyPriorityQueue</code> 提供了 <code>push</code> 和 <code>pop</code> 两个方法，就像传统的队列一样，但是因为要考虑到优先级，所以具体实现上又与传统的队列有区别。</p>
+<p><code>ScrapyPriorityQueue</code> 实例拥有一个用于指示当前优先级的 <code>curprio</code> 属性，以及与不同优先级对应的若干个 <code>queue</code>。<code>push</code> 方法除了将 <code>request</code> 入队相应的队列之外，还会调整 <code>curprio</code> 为 <code>request.priority</code>。<code>pop</code> 方法会根据  <code>curprio</code> 从相应的队列出队 <code>request</code> 作为返回值，但是在返回之前还会判断一下队列是否为空，如果是则重新调整 <code>curprio</code> 为可用的最小值。</p>
+<h3 id="DownloaderAwarePriorityQueue"><a href="#DownloaderAwarePriorityQueue" class="headerlink" title="DownloaderAwarePriorityQueue"></a>DownloaderAwarePriorityQueue</h3><p><code>DownloaderAwarePriorityQueue</code> 没太看懂，主要是因为 <code>Downloader</code> 没有文档。不过从 <code>DownloaderAwarePriorityQueue</code> 的文档中可以知道，它的机制是把持有下载最少的域名的 <code>request</code> 最先出队。</p>
+
+    </div>
+     
+    <div class="post-footer__meta"><p>更新于 2024-09-07</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/09/07/hello-world/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            上一篇
+                        </div>
+                        <div class="nav__title">
+                            Hello World
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2024/05/06/NeoVim%20%E4%B8%AD%20Conda%20%E7%8E%AF%E5%A2%83%E4%B8%8B%E9%85%8D%E7%BD%AE%20LSP%20%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            下一篇
+                        </div>
+                        <div class="nav__title">
+                            NeoVim 中 Conda 环境下配置 LSP 踩坑记录
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+    
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2024 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>

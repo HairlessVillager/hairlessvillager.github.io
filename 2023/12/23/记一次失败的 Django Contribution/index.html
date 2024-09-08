@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+    
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>记一次失败的 Django Contribution | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="问题场景正在学习 Django 的测试模块，看到 fixture 可以用 manage.py dumpdata 指令生成，遂尝试使用，发现遇到编码问题，输出的中文为 gkb 编码。在官方文档上搜索 database encoding 关键字，发现我使用的 SQLite 数据库后端的默认编码为 UTF-8，其他的地方也没发现 gbk 编码。 分析过程开始调试源码。通过 manage.py 获取命令行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次失败的 Django Contribution">
+<meta property="og:url" content="http://hairlessvillager.github.io/2023/12/23/%E8%AE%B0%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E7%9A%84%20Django%20Contribution/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="问题场景正在学习 Django 的测试模块，看到 fixture 可以用 manage.py dumpdata 指令生成，遂尝试使用，发现遇到编码问题，输出的中文为 gkb 编码。在官方文档上搜索 database encoding 关键字，发现我使用的 SQLite 数据库后端的默认编码为 UTF-8，其他的地方也没发现 gbk 编码。 分析过程开始调试源码。通过 manage.py 获取命令行">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-12-23T04:03:00.000Z">
+<meta property="article:modified_time" content="2024-09-07T15:26:41.011Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+    
+
+    
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">Demo</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">首页</a>
+                
+                    <a href="/tags/" class="navbar-menu button">标签</a>
+                
+                    <a href="/archives/" class="navbar-menu button">归档</a>
+                
+                    <a href="/friends/" class="navbar-menu button">友链</a>
+                
+                    <a href="/page/" class="navbar-menu button">Page</a>
+                
+            </div>
+        
+        
+        
+
+        
+        
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">首页</a>
+                
+                    <a href="/tags/" class="dropdown-menu button">标签</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">归档</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">友链</a>
+                
+                    <a href="/page/" class="dropdown-menu button">Page</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        记一次失败的 Django Contribution
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2023/12/" class="post-meta__date button">2023-12-23</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+
+<article class="post content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <h2 id="问题场景"><a href="#问题场景" class="headerlink" title="问题场景"></a>问题场景</h2><p>正在学习 Django 的测试模块，看到 fixture 可以用 <code>manage.py dumpdata</code> 指令生成，遂尝试使用，发现遇到编码问题，输出的中文为 gkb 编码。在官方文档上搜索 database encoding 关键字，发现我使用的 SQLite 数据库后端的默认编码为 UTF-8，其他的地方也没发现 gbk 编码。</p>
+<h2 id="分析过程"><a href="#分析过程" class="headerlink" title="分析过程"></a>分析过程</h2><p>开始调试源码。通过 manage.py 获取命令行解析模块 <code>django.core.management</code>，进一步查看源码定位目标子模块 <code>django.core.management.commands.dumpdata</code>，在 line 265 发现一处对 <code>serializers.serialize</code> 的调用，猜测这里是程序的出口，定位到 <code>django.core.management.serializers</code>。</p>
+<p>在 <code>django.core.management.serializers</code> 发现若干子模块，为不同格式的序列化模块。使用多个 dumpdata 的 <code>--format</code> 参数，发现问题均能复现，且均为 gbk 编码中文。进入 <code>json.py</code> 子模块，通过<code>print(__class__.__name__)</code>打断点定位到入口函数 <code>start_serialization()</code>，发现对 <code>self.stream.write()</code> 的调用。尝试增加一行 <code>self.stream.write(&quot;ABCDEFG甲乙丙丁GFEDCBA&quot;)</code>，在输出文件中成功发现这个字符串，且为 gbk 编码。遂开始分析 <code>self.stream</code>。</p>
+<p><code>dumpdata.py</code> line 271 发现传入 <code>stream</code> 参数，分析为输出流优先为文件输出流 <code>stream = open_method(file_path, &quot;wt&quot;, **kwargs)</code>，若无文件输出流则换为标准输出 <code>self.stdout</code>。我的场景是文件输出。定位 <code>open_method()</code> 函数，利用断点辅助调试，定位到 line 253，发现为 Python 内置函数 <code>open()</code>。</p>
+<p>开始分析 <code>open_method()</code> 的 <code>kwargs</code> 参数。发现其在相同的位置赋值为 <code>&#123;&#125;</code>。</p>
+<p>查阅 <code>open()</code> 的文档，发现 <code>encoding</code> 参数默认为 <code>None</code>，具体值为 <code>locale.getencoding()</code>，查阅文档：</p>
+<blockquote>
+<p>locale.getencoding()<br>获取当前的 locale encoding:</p>
+<p>在 Android 和 VxWorks 上，将返回 <code>&quot;utf-8&quot;</code>。</p>
+<p>在 Unix 上，将返回当前, return the encoding of the current <code>LC_CTYPE</code> 语言区域的编码格式。 如果 <code>nl_langinfo(CODESET)</code> 返回空字符串则将返回 <code>&quot;utf-8&quot;</code>: 举例来说，如果当前 <code>LC_CTYPE</code> 语言区域不受支持的时候。</p>
+<p>在 Windows 上，返回 ANSI 代码页。</p>
+</blockquote>
+<p>在 Windows 环境上测试，<code>locale.getencoding()</code> 返回 cp936，查阅资料获知即 gbk。</p>
+<h2 id="调用追踪"><a href="#调用追踪" class="headerlink" title="调用追踪"></a>调用追踪</h2><p>gbk 的调用追踪：</p>
+<ol>
+<li><code>manage.py dumpdata</code></li>
+<li><code>django.core.management.commands.dumpdata</code></li>
+<li><code>open()</code></li>
+<li><code>locale.getencoding()</code></li>
+</ol>
+<h2 id="查看历史工单"><a href="#查看历史工单" class="headerlink" title="查看历史工单"></a>查看历史工单</h2><p>在申请工单之前，以关键词 dumpdata encoding 搜索历史工单，发现 <a target="_blank" rel="noopener" href="https://code.djangoproject.com/ticket/26721">#26721</a> 与我所遇到的问题一致，已经关闭了。他们给出的解决方案是调整 Windows 的编码，如 <a target="_blank" rel="noopener" href="https://docs.djangoproject.com/zh-hans/5.0/howto/windows/#common-pitfalls">如何在 Windows 上安装 Django </a> 的“常见失误”一节所述。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本以为能搞个 Contribution 的，哪晓得这是前人早就研究过的东西。</p>
+
+    </div>
+     
+    <div class="post-footer__meta"><p>更新于 2024-09-07</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/05/06/NeoVim%20%E4%B8%AD%20Conda%20%E7%8E%AF%E5%A2%83%E4%B8%8B%E9%85%8D%E7%BD%AE%20LSP%20%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            上一篇
+                        </div>
+                        <div class="nav__title">
+                            NeoVim 中 Conda 环境下配置 LSP 踩坑记录
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2023/10/31/TODO/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            下一篇
+                        </div>
+                        <div class="nav__title">
+                            TODO
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+    
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2024 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>
