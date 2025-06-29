@@ -1,7 +1,6 @@
 ---
 title: TODO
 date: 2023-10-31 15:30
-updated: 2024-09-08 13:08
 ---
 
 记录自己品鉴过的精神食粮。
@@ -10,23 +9,16 @@ updated: 2024-09-08 13:08
 
 ### Reading
 
-- 浪潮之巅
-- 货币金融学 第11版
-- 投资学 博迪
-- 金融学 博迪
-- 凤凰架构：构建可靠的大型分布式系统
-- Google软件工程
+- 人件
 
 ### To Read
 
 - SRE：Google运维解密
 - 发布！设计与部署稳定的分布式系统
-- Redis 设计与实现
 - 构建高性能Web站点
 - 经济学原理 宏观经济学分册 昆曼
 - 经济学原理 微观经济学分册 昆曼
 - 半小时漫画经济学 1~3
-- 剑指Offer：名企面试官精讲典型编程题
 - Software Engineering at Google
 - 怎样解题
 - MySQL 必知必会
@@ -57,7 +49,14 @@ updated: 2024-09-08 13:08
 
 ### Read
 
+- 见识
+- 小米创业思考
+- PostgreSQL修炼之道
+- 剑指Offer：名企面试官精讲典型编程题
+- Redis 设计与实现
+- 浪潮之巅
 - Effective Python：编写高质量Python代码的90个有效方法 第2版
+- 投资学
 - 大型网站技术架构：核心原理与案例分析
 - 人月神话 40周年中文纪念版
 - 数据密集型应用系统设计
@@ -83,11 +82,9 @@ updated: 2024-09-08 13:08
 
 ### Playing
 
-- 白色相簿2
-
 ### To Play
 
-- 樱花萌放
+- 白色相簿2
 - 天津罪
 - 纸上的魔法使
 - 纯白交响曲
@@ -123,6 +120,7 @@ updated: 2024-09-08 13:08
 - Rewrite+
 - 秽翼的尤斯蒂娅
 - 交响乐之雨
+- 樱花萌放
 
 ## Anime
 
@@ -167,7 +165,13 @@ updated: 2024-09-08 13:08
 - 少女☆歌剧 Revue Starlight
 - 剧场版 少女☆歌剧 Revue Starlight
 - 孤独摇滚！
+- BanG Dream!
+- BanG Dream! 2nd Season
+- BanG Dream! 少女乐团派对！☆PICO
+- BanG Dream! 少女乐团派对！☆PICO～大份～
+- BanG Dream! 少女乐团派对！☆PICO Fever!
 - BanG Dream! It's MyGO!!!!!
+- BanG Dream! Ave Mujica
 - GIRLS BAND CRY
 - 凉宫春日的忧郁 2009
 - 凉宫春日的消失
