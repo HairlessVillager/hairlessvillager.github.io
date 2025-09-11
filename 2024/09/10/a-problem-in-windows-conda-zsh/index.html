@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>在 Zsh 环境下配置 Conda/Mamba 踩坑记录 | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="相关 Issue：  https:&#x2F;&#x2F;github.com&#x2F;ohmyzsh&#x2F;ohmyzsh&#x2F;issues&#x2F;12416 https:&#x2F;&#x2F;github.com&#x2F;conda&#x2F;conda&#x2F;issues&#x2F;13915 https:&#x2F;&#x2F;github.com&#x2F;conda&#x2F;conda&#x2F;issues&#x2F;9922  其一在 zsh 中运行命令 mamba activate base 提示运行 mamba init zsh">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在 Zsh 环境下配置 Conda&#x2F;Mamba 踩坑记录">
+<meta property="og:url" content="http://hairlessvillager.github.io/2024/09/10/a-problem-in-windows-conda-zsh/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="相关 Issue：  https:&#x2F;&#x2F;github.com&#x2F;ohmyzsh&#x2F;ohmyzsh&#x2F;issues&#x2F;12416 https:&#x2F;&#x2F;github.com&#x2F;conda&#x2F;conda&#x2F;issues&#x2F;13915 https:&#x2F;&#x2F;github.com&#x2F;conda&#x2F;conda&#x2F;issues&#x2F;9922  其一在 zsh 中运行命令 mamba activate base 提示运行 mamba init zsh">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-09-10T01:33:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T09:27:15.582Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+        <link rel="stylesheet" id="hl-default-theme" href="/css/highlight/highlight.css" media="none" >
+        
+            <link rel="stylesheet" id="hl-dark-theme" href="/css/highlight/highlight.dark.css" media="none">
+        
+    
+
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">Home</a>
+                
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
+                
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
+                
+                    <a href="/about/" class="navbar-menu button">About</a>
+                
+            </div>
+        
+        
+        
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
+
+        
+        
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">Home</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
+                
+                    <a href="/about/" class="dropdown-menu button">About</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        在 Zsh 环境下配置 Conda/Mamba 踩坑记录
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2024/09/" class="post-meta__date button">Created@2024-09-10 09:33</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%B8%80"><span class="toc-text">其一</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%BA%8C"><span class="toc-text">其二</span></a></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">Article Directory</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%B8%80"><span class="toc-text">其一</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%BA%8C"><span class="toc-text">其二</span></a></li></ol>
+    </div>
+
+
+<article class="post post__with-toc content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <p>相关 Issue：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/ohmyzsh/ohmyzsh/issues/12416">https://github.com/ohmyzsh/ohmyzsh/issues/12416</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/conda/conda/issues/13915">https://github.com/conda/conda/issues/13915</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/conda/conda/issues/9922">https://github.com/conda/conda/issues/9922</a></li>
+</ul>
+<h2 id="其一"><a href="#其一" class="headerlink" title="其一"></a>其一</h2><p>在 zsh 中运行命令 <code>mamba activate base</code> 提示运行 <code>mamba init zsh</code>，运行后重启终端发现无效。</p>
+<p>观察输出，发现<code>.zshrc</code>配置文件的位置不对，输出在了 Windows 的 home 目录下（即<code>C:\user\username\.zshrc</code>），而我希望输出在 Zsh 的 home 目录下（即<code>D:\cygwin\home\username\.zshrc</code>）。</p>
+<p>这个问题解决很简单，把前者新增内容添加到后者即可。</p>
+<h2 id="其二"><a href="#其二" class="headerlink" title="其二"></a>其二</h2><p>再次运行<code>mamba init zsh</code>，提示 <code>(eval):10: parse error near `^M&#39;</code>。</p>
+<p>看到<code>^M</code>很容易就能猜出是换行符相关的问题。</p>
+<p>参考上面 3 个 issue 后，给出我自己的解决方法：</p>
+<ol>
+<li>在 Zsh 的 home 目录下创建 <code>conda-shell-zsh-hook.zsh</code>文件，在保存时注意使用 LF 作为换行符：</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PYTHONIOENCODING=UTF-8</span><br><span class="line"><span class="built_in">export</span> CONDA_EXE=<span class="string">&quot;<span class="subst">$(cygpath &#x27;D:\Anaconda\anaconda3\Scripts\conda.exe&#x27;)</span>&quot;</span></span><br><span class="line"><span class="built_in">export</span> _CE_M=<span class="string">&#x27;&#x27;</span></span><br><span class="line"><span class="built_in">export</span> _CE_CONDA=<span class="string">&#x27;&#x27;</span></span><br><span class="line"><span class="built_in">export</span> CONDA_PYTHON_EXE=<span class="string">&quot;<span class="subst">$(cygpath &#x27;D:\Anaconda\anaconda3\python.exe&#x27;)</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Copyright (C) 2012 Anaconda, Inc</span></span><br><span class="line"><span class="comment"># SPDX-License-Identifier: BSD-3-Clause</span></span><br><span class="line">__conda_exe() (</span><br><span class="line">    <span class="string">&quot;<span class="variable">$CONDA_EXE</span>&quot;</span> <span class="variable">$_CE_M</span> <span class="variable">$_CE_CONDA</span> <span class="string">&quot;<span class="variable">$@</span>&quot;</span> | <span class="built_in">tr</span> -d <span class="string">&#x27;\r&#x27;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">__conda_hashr</span></span>() &#123;</span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">&quot;<span class="variable">$&#123;ZSH_VERSION:+x&#125;</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">        \<span class="built_in">rehash</span></span><br><span class="line">    <span class="keyword">elif</span> [ -n <span class="string">&quot;<span class="variable">$&#123;POSH_VERSION:+x&#125;</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">        :  <span class="comment"># pass</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        \<span class="built_in">hash</span> -r</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">__conda_activate</span></span>() &#123;</span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">&quot;<span class="variable">$&#123;CONDA_PS1_BACKUP:+x&#125;</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="comment"># Handle transition from shell activated with conda &lt;= 4.3 to a subsequent activation</span></span><br><span class="line">        <span class="comment"># after conda updated to &gt;= 4.4. See issue #6173.</span></span><br><span class="line">        PS1=<span class="string">&quot;<span class="variable">$CONDA_PS1_BACKUP</span>&quot;</span></span><br><span class="line">        \<span class="built_in">unset</span> CONDA_PS1_BACKUP</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    \<span class="built_in">local</span> ask_conda</span><br><span class="line">    ask_conda=<span class="string">&quot;<span class="subst">$(PS1=<span class="string">&quot;<span class="variable">$&#123;PS1:-&#125;</span>&quot;</span> __conda_exe shell.posix <span class="string">&quot;<span class="variable">$@</span>&quot;</span>)</span>&quot;</span> || \<span class="built_in">return</span></span><br><span class="line">    \<span class="built_in">eval</span> <span class="string">&quot;<span class="variable">$ask_conda</span>&quot;</span></span><br><span class="line">    __conda_hashr</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">__conda_reactivate</span></span>() &#123;</span><br><span class="line">    \<span class="built_in">local</span> ask_conda</span><br><span class="line">    ask_conda=<span class="string">&quot;<span class="subst">$(PS1=<span class="string">&quot;<span class="variable">$&#123;PS1:-&#125;</span>&quot;</span> __conda_exe shell.posix reactivate)</span>&quot;</span> || \<span class="built_in">return</span></span><br><span class="line">    \<span class="built_in">eval</span> <span class="string">&quot;<span class="variable">$ask_conda</span>&quot;</span></span><br><span class="line">    __conda_hashr</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">conda</span></span>() &#123;</span><br><span class="line">    \<span class="built_in">local</span> cmd=<span class="string">&quot;<span class="variable">$&#123;1-__missing__&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">&quot;<span class="variable">$cmd</span>&quot;</span> <span class="keyword">in</span></span><br><span class="line">        activate|deactivate)</span><br><span class="line">            __conda_activate <span class="string">&quot;<span class="variable">$@</span>&quot;</span></span><br><span class="line">            ;;</span><br><span class="line">        install|update|upgrade|remove|uninstall)</span><br><span class="line">            __conda_exe <span class="string">&quot;<span class="variable">$@</span>&quot;</span> || \<span class="built_in">return</span></span><br><span class="line">            __conda_reactivate</span><br><span class="line">            ;;</span><br><span class="line">        *)</span><br><span class="line">            __conda_exe <span class="string">&quot;<span class="variable">$@</span>&quot;</span></span><br><span class="line">            ;;</span><br><span class="line">    <span class="keyword">esac</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -z <span class="string">&quot;<span class="variable">$&#123;CONDA_SHLVL+x&#125;</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    \<span class="built_in">export</span> CONDA_SHLVL=0</span><br><span class="line">    <span class="comment"># In dev-mode CONDA_EXE is python.exe and on Windows</span></span><br><span class="line">    <span class="comment"># it is in a different relative location to condabin.</span></span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">&quot;<span class="variable">$&#123;_CE_CONDA:+x&#125;</span>&quot;</span> ] &amp;&amp; [ -n <span class="string">&quot;<span class="variable">$&#123;WINDIR+x&#125;</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">        PATH=<span class="string">&quot;<span class="subst">$(\dirname <span class="string">&quot;<span class="variable">$CONDA_EXE</span>&quot;</span>)</span>/condabin<span class="variable">$&#123;PATH:+&quot;:<span class="variable">$&#123;PATH&#125;</span>&quot;&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        PATH=<span class="string">&quot;<span class="subst">$(\dirname <span class="string">&quot;<span class="subst">$(\dirname <span class="string">&quot;<span class="variable">$CONDA_EXE</span>&quot;</span>)</span>&quot;</span>)</span>/condabin<span class="variable">$&#123;PATH:+&quot;:<span class="variable">$&#123;PATH&#125;</span>&quot;&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    \<span class="built_in">export</span> PATH</span><br><span class="line"></span><br><span class="line">    <span class="comment"># We&#x27;re not allowing PS1 to be unbound. It must at least be set.</span></span><br><span class="line">    <span class="comment"># However, we&#x27;re not exporting it, which can cause problems when starting a second shell</span></span><br><span class="line">    <span class="comment"># via a first shell (i.e. starting zsh from bash).</span></span><br><span class="line">    <span class="keyword">if</span> [ -z <span class="string">&quot;<span class="variable">$&#123;PS1+x&#125;</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">        PS1=</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">conda activate base</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>在<code>.zshrc</code>目录中增加以下内容（如已存在则替换）：</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># &gt;&gt;&gt; conda initialize &gt;&gt;&gt;</span></span><br><span class="line"><span class="comment"># !! Contents within this block are managed by &#x27;conda init&#x27; !!</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">&#x27;/cygdrive/d/Anaconda/anaconda3/Scripts/conda.exe&#x27;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">export</span> PYTHONIOENCODING=UTF-8</span><br><span class="line">    <span class="built_in">source</span> ~/conda-shell-zsh-hook.zsh</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">&quot;/cygdrive/d/Anaconda/anaconda3/etc/profile.d/mamba.sh&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    . <span class="string">&quot;/cygdrive/d/Anaconda/anaconda3/etc/profile.d/mamba.sh&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="comment"># &lt;&lt;&lt; conda initialize &lt;&lt;&lt;</span></span><br></pre></td></tr></table></figure>
+
+<p>启动 Zsh 后无报错，且在右侧显示环境名称，问题解决。</p>
+
+    </div>
+    
+    <div class="post__license">
+        <p>
+            <strong>Author: </strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                Permalink: 
+            </strong>
+            <a href="http://hairlessvillager.github.io/2024/09/10/a-problem-in-windows-conda-zsh/">http://hairlessvillager.github.io/2024/09/10/a-problem-in-windows-conda-zsh/</a>
+        </p>
+        
+            <strong>
+                <p>The article is licensed under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> protocol by default.</p>
+
+            </strong>
+        
+            <strong>
+                <p>Please comply with the protocol when using it.</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Updated@2025-09-11 17:27</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/09/24/build-miniob-development-environment/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            Previous Post
+                        </div>
+                        <div class="nav__title">
+                            使用 Docker 搭建 miniob 开发环境
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2024/08/11/benchtest-on-python-web-application/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            Next Post
+                        </div>
+                        <div class="nav__title">
+                            Python Web 应用并发测试
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+     
+    <a href="#" class="button" id="b2t" aria-label="Back to Top" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2023&nbsp;-&nbsp;2025 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>

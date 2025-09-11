@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>记一次失败的 Django Contribution | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="问题场景正在学习 Django 的测试模块，看到 fixture 可以用 manage.py dumpdata 指令生成，遂尝试使用，发现遇到编码问题，输出的中文为 gkb 编码。在官方文档上搜索 database encoding 关键字，发现我使用的 SQLite 数据库后端的默认编码为 UTF-8，其他的地方也没发现 gbk 编码。 分析过程开始调试源码。通过 manage.py 获取命令行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次失败的 Django Contribution">
+<meta property="og:url" content="http://hairlessvillager.github.io/2023/12/23/a-failed-django-contribution/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="问题场景正在学习 Django 的测试模块，看到 fixture 可以用 manage.py dumpdata 指令生成，遂尝试使用，发现遇到编码问题，输出的中文为 gkb 编码。在官方文档上搜索 database encoding 关键字，发现我使用的 SQLite 数据库后端的默认编码为 UTF-8，其他的地方也没发现 gbk 编码。 分析过程开始调试源码。通过 manage.py 获取命令行">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-12-23T04:03:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T09:27:15.582Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+        <link rel="stylesheet" id="hl-default-theme" href="/css/highlight/highlight.css" media="none" >
+        
+            <link rel="stylesheet" id="hl-dark-theme" href="/css/highlight/highlight.dark.css" media="none">
+        
+    
+
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">Home</a>
+                
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
+                
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
+                
+                    <a href="/about/" class="navbar-menu button">About</a>
+                
+            </div>
+        
+        
+        
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
+
+        
+        
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">Home</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
+                
+                    <a href="/about/" class="dropdown-menu button">About</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        记一次失败的 Django Contribution
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2023/12/" class="post-meta__date button">Created@2023-12-23 12:03</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%9C%BA%E6%99%AF"><span class="toc-text">问题场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="toc-text">分析过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B0%83%E7%94%A8%E8%BF%BD%E8%B8%AA"><span class="toc-text">调用追踪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E5%8E%86%E5%8F%B2%E5%B7%A5%E5%8D%95"><span class="toc-text">查看历史工单</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">Article Directory</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%9C%BA%E6%99%AF"><span class="toc-text">问题场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="toc-text">分析过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B0%83%E7%94%A8%E8%BF%BD%E8%B8%AA"><span class="toc-text">调用追踪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E5%8E%86%E5%8F%B2%E5%B7%A5%E5%8D%95"><span class="toc-text">查看历史工单</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li></ol>
+    </div>
+
+
+<article class="post post__with-toc content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <h2 id="问题场景"><a href="#问题场景" class="headerlink" title="问题场景"></a>问题场景</h2><p>正在学习 Django 的测试模块，看到 fixture 可以用 <code>manage.py dumpdata</code> 指令生成，遂尝试使用，发现遇到编码问题，输出的中文为 gkb 编码。在官方文档上搜索 database encoding 关键字，发现我使用的 SQLite 数据库后端的默认编码为 UTF-8，其他的地方也没发现 gbk 编码。</p>
+<h2 id="分析过程"><a href="#分析过程" class="headerlink" title="分析过程"></a>分析过程</h2><p>开始调试源码。通过 manage.py 获取命令行解析模块 <code>django.core.management</code>，进一步查看源码定位目标子模块 <code>django.core.management.commands.dumpdata</code>，在 line 265 发现一处对 <code>serializers.serialize</code> 的调用，猜测这里是程序的出口，定位到 <code>django.core.management.serializers</code>。</p>
+<p>在 <code>django.core.management.serializers</code> 发现若干子模块，为不同格式的序列化模块。使用多个 dumpdata 的 <code>--format</code> 参数，发现问题均能复现，且均为 gbk 编码中文。进入 <code>json.py</code> 子模块，通过<code>print(__class__.__name__)</code>打断点定位到入口函数 <code>start_serialization()</code>，发现对 <code>self.stream.write()</code> 的调用。尝试增加一行 <code>self.stream.write(&quot;ABCDEFG甲乙丙丁GFEDCBA&quot;)</code>，在输出文件中成功发现这个字符串，且为 gbk 编码。遂开始分析 <code>self.stream</code>。</p>
+<p><code>dumpdata.py</code> line 271 发现传入 <code>stream</code> 参数，分析为输出流优先为文件输出流 <code>stream = open_method(file_path, &quot;wt&quot;, **kwargs)</code>，若无文件输出流则换为标准输出 <code>self.stdout</code>。我的场景是文件输出。定位 <code>open_method()</code> 函数，利用断点辅助调试，定位到 line 253，发现为 Python 内置函数 <code>open()</code>。</p>
+<p>开始分析 <code>open_method()</code> 的 <code>kwargs</code> 参数。发现其在相同的位置赋值为 <code>&#123;&#125;</code>。</p>
+<p>查阅 <code>open()</code> 的文档，发现 <code>encoding</code> 参数默认为 <code>None</code>，具体值为 <code>locale.getencoding()</code>，查阅文档：</p>
+<blockquote>
+<p>locale.getencoding()<br>获取当前的 locale encoding:</p>
+<p>在 Android 和 VxWorks 上，将返回 <code>&quot;utf-8&quot;</code>。</p>
+<p>在 Unix 上，将返回当前, return the encoding of the current <code>LC_CTYPE</code> 语言区域的编码格式。 如果 <code>nl_langinfo(CODESET)</code> 返回空字符串则将返回 <code>&quot;utf-8&quot;</code>: 举例来说，如果当前 <code>LC_CTYPE</code> 语言区域不受支持的时候。</p>
+<p>在 Windows 上，返回 ANSI 代码页。</p>
+</blockquote>
+<p>在 Windows 环境上测试，<code>locale.getencoding()</code> 返回 cp936，查阅资料获知即 gbk。</p>
+<h2 id="调用追踪"><a href="#调用追踪" class="headerlink" title="调用追踪"></a>调用追踪</h2><p>gbk 的调用追踪：</p>
+<ol>
+<li><code>manage.py dumpdata</code></li>
+<li><code>django.core.management.commands.dumpdata</code></li>
+<li><code>open()</code></li>
+<li><code>locale.getencoding()</code></li>
+</ol>
+<h2 id="查看历史工单"><a href="#查看历史工单" class="headerlink" title="查看历史工单"></a>查看历史工单</h2><p>在申请工单之前，以关键词 dumpdata encoding 搜索历史工单，发现 <a target="_blank" rel="noopener" href="https://code.djangoproject.com/ticket/26721">#26721</a> 与我所遇到的问题一致，已经关闭了。他们给出的解决方案是调整 Windows 的编码，如 <a target="_blank" rel="noopener" href="https://docs.djangoproject.com/zh-hans/5.0/howto/windows/#common-pitfalls">如何在 Windows 上安装 Django </a> 的“常见失误”一节所述。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本以为能搞个 Contribution 的，哪晓得这是前人早就研究过的东西。</p>
+
+    </div>
+    
+    <div class="post__license">
+        <p>
+            <strong>Author: </strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                Permalink: 
+            </strong>
+            <a href="http://hairlessvillager.github.io/2023/12/23/a-failed-django-contribution/">http://hairlessvillager.github.io/2023/12/23/a-failed-django-contribution/</a>
+        </p>
+        
+            <strong>
+                <p>The article is licensed under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> protocol by default.</p>
+
+            </strong>
+        
+            <strong>
+                <p>Please comply with the protocol when using it.</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Updated@2025-09-11 17:27</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/05/06/a-problem-in-windows-conda-neovim/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            Previous Post
+                        </div>
+                        <div class="nav__title">
+                            NeoVim 中 Conda 环境下配置 LSP 踩坑记录
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2023/10/31/todos/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            Next Post
+                        </div>
+                        <div class="nav__title">
+                            TODO
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+     
+    <a href="#" class="button" id="b2t" aria-label="Back to Top" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2023&nbsp;-&nbsp;2025 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>

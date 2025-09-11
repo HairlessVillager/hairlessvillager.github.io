@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>GPU-bound Web 程序性能优化 | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="最近接手了一个 GPU-bound 的 Web Server 开发工作，这里记录一下开发中的问题、实验数据和解决方案。  Machine：Google Deep Learning VM GPU: NVIDIA A100-SXM4-40GB * 4 Memory: 334 GB Driver Version: 560.35.03 CUDA Version: 12.6  Requirements使用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GPU-bound Web 程序性能优化">
+<meta property="og:url" content="http://hairlessvillager.github.io/2024/10/11/research-on-gpu-bound-web-server/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="最近接手了一个 GPU-bound 的 Web Server 开发工作，这里记录一下开发中的问题、实验数据和解决方案。  Machine：Google Deep Learning VM GPU: NVIDIA A100-SXM4-40GB * 4 Memory: 334 GB Driver Version: 560.35.03 CUDA Version: 12.6  Requirements使用">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/1-worker-nginx.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/1-worker-no-nginx.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/4-workers-nginx.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/4-workers-no-nginx.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-8-BT-500.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-8-BT-300.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-8-BT-100.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-16-BT-500.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-16-BT-300.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-16-BT-100.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-32-BT-500.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-32-BT-300.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-32-BT-100.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/BSM-16-BT-100-final.jpeg">
+<meta property="article:published_time" content="2024-10-11T02:30:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T09:27:15.583Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://hairlessvillager.github.io/images/research-on-gpu-bound-web-server/1-worker-nginx.jpeg">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+        <link rel="stylesheet" id="hl-default-theme" href="/css/highlight/highlight.css" media="none" >
+        
+            <link rel="stylesheet" id="hl-dark-theme" href="/css/highlight/highlight.dark.css" media="none">
+        
+    
+
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">Home</a>
+                
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
+                
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
+                
+                    <a href="/about/" class="navbar-menu button">About</a>
+                
+            </div>
+        
+        
+        
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
+
+        
+        
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">Home</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
+                
+                    <a href="/about/" class="dropdown-menu button">About</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        GPU-bound Web 程序性能优化
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2024/10/" class="post-meta__date button">Created@2024-10-11 10:30</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Requirements"><span class="toc-text">Requirements</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#No-Batch"><span class="toc-text">No Batch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Offline-Batch"><span class="toc-text">Offline Batch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Online-Batch"><span class="toc-text">Online Batch</span></a></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">Article Directory</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Requirements"><span class="toc-text">Requirements</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#No-Batch"><span class="toc-text">No Batch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Offline-Batch"><span class="toc-text">Offline Batch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Online-Batch"><span class="toc-text">Online Batch</span></a></li></ol>
+    </div>
+
+
+<article class="post post__with-toc content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <p>最近接手了一个 GPU-bound 的 Web Server 开发工作，这里记录一下开发中的问题、实验数据和解决方案。</p>
+<ul>
+<li>Machine：Google Deep Learning VM</li>
+<li>GPU: NVIDIA A100-SXM4-40GB * 4</li>
+<li>Memory: 334 GB</li>
+<li>Driver Version: 560.35.03</li>
+<li>CUDA Version: 12.6</li>
+</ul>
+<h2 id="Requirements"><a href="#Requirements" class="headerlink" title="Requirements"></a>Requirements</h2><p>使用 Huggingface 托管的 TrustSafeAI&#x2F;RADAR-Vicuna-7B 模型做文本分类操作，输入长度不固定，需要拆分成不大于 300 字符的字符串列表分别推理，然后一起返回给客户端。</p>
+<h2 id="No-Batch"><a href="#No-Batch" class="headerlink" title="No Batch"></a>No Batch</h2><p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/gpu-test/blob/284699ca85f86b29b1528dad470cb403223c3e6f/main.py">284699c main.py</a></p>
+<p>原型开发时不考虑效率，用了非常 naive 的实现。后续使用 locust 做性能测试，得到这些结果：</p>
+<p>1 worker with nginx<br><img src="/images/research-on-gpu-bound-web-server/1-worker-nginx.jpeg" alt="1 worker with nginx"></p>
+<p>1 worker without nginx<br><img src="/images/research-on-gpu-bound-web-server/1-worker-no-nginx.jpeg" alt="1 worker without nginx"></p>
+<p>4 workers with nginx<br><img src="/images/research-on-gpu-bound-web-server/4-workers-nginx.jpeg" alt="4 workers with nginx"></p>
+<p>4 workers without nginx<br><img src="/images/research-on-gpu-bound-web-server/4-workers-no-nginx.jpeg" alt="4 workers without nginx"></p>
+<p>每一个 Worker 都独占一个进程，并拥有独立的显存。</p>
+<p>从性能测试的结果可以看出：</p>
+<ol>
+<li>单进程时用户数在 20 左右可以发挥最好的性能，RPS 不会超过 25，RTp95 大约为 1000ms，随着用户数增多 RT 越来越大，同时 RPS 越来越小，Nginx 基本没有作用；</li>
+<li>多进程时用户数在 20 左右可以发挥最好性能，相较于没有 Nginx 的版本，有 Nginx 时性能和稳定性反倒是下降了，主要体现在用户数大于 40 的压力测试阶段：<ul>
+<li>无 Nginx 时 RPS 稳定在 34 左右，有 Nginx 时 RPS 稳定在 25 左右</li>
+<li>无 Nginx 时 RTp50 &lt; 1000ms，RTp95 ~ 4000ms，有 Nginx 时 RTp50 &lt; 3000ms，RTp95 ~ 4500ms</li>
+</ul>
+</li>
+</ol>
+<p>结论：Nginx 基本没有作用，有时甚至会起到反作用；多进程的主要作用是提高 RPS，对 RT 的改善不明显。</p>
+<h2 id="Offline-Batch"><a href="#Offline-Batch" class="headerlink" title="Offline Batch"></a>Offline Batch</h2><p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/gpu-test/blob/28693e18ba1becfacf7e73c9b4ee8ebca02ddd4b/script.py">28693e1 script.py</a></p>
+<p>在测试过程应用的日志中看到这样一条提示：“You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset”。搜索可知这条提示会在 <code>pipe()</code> 被调用 10 次后固定输出（<a target="_blank" rel="noopener" href="https://github.com/huggingface/transformers/issues/22387#issuecomment-1485816636">ref</a>）。从 issue 中可以得到一条启示，即最好使用批处理（batch）来加速计算过程。</p>
+<p>写一个脚本测试一下使用批处理时的性能，大概思路是不断生成随机长度的字符串，用不同的 batch_size 并行推理，然后将开销平摊到每个字符串上，具体实现见仓库中的 <code>script.py</code> 文件。</p>
+<p>测试得到的结果如下：</p>
+<p>当字符串长度在 [100, 800] 均匀分布时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">split=1, 16.771073 / 1024 = 0.016378 s/item</span><br><span class="line">split=2, 12.845103 / 1024 = 0.012544 s/item</span><br><span class="line">split=4, 12.040627 / 1024 = 0.011758 s/item</span><br><span class="line">split=8, 11.897535 / 1024 = 0.011619 s/item</span><br><span class="line">split=16, 11.806041 / 1024 = 0.011529 s/item</span><br><span class="line">split=32, 11.853073 / 1024 = 0.011575 s/item</span><br><span class="line">split=64, 11.974148 / 1024 = 0.011694 s/item</span><br><span class="line">split=128, 12.484992 / 1024 = 0.012192 s/item</span><br></pre></td></tr></table></figure>
+
+<p>当字符串长度在 [100, 300] 均匀分布时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">split=1, 15.606943 / 1024 = 0.015241 s/item</span><br><span class="line">split=2, 8.714852 / 1024 = 0.008511 s/item</span><br><span class="line">split=4, 6.091943 / 1024 = 0.005949 s/item</span><br><span class="line">split=8, 5.382488 / 1024 = 0.005256 s/item</span><br><span class="line">split=16, 5.312983 / 1024 = 0.005188 s/item</span><br><span class="line">split=32, 5.207218 / 1024 = 0.005085 s/item</span><br><span class="line">split=64, 5.282969 / 1024 = 0.005159 s/item</span><br><span class="line">split=128, 5.395465 / 1024 = 0.005269 s/item</span><br></pre></td></tr></table></figure>
+
+<p>可知 batch_size 选择 16 或 32 时性能最高，这个可作为后续参数的参考值。</p>
+<h2 id="Online-Batch"><a href="#Online-Batch" class="headerlink" title="Online Batch"></a>Online Batch</h2><p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/gpu-test/blob/548809f621e0110f9c8f75fb049343a02a94f2b4/main.py">548809f main.py</a></p>
+<p>参考了 Transformers 官方文档上关于 Web Server 的建议（<a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/pipeline_webserver">ref</a>），使用异步和批处理又写了一版。</p>
+<p>这里把关键部分放上来，一些无关紧要的地方已经删去或使用 <code>...</code> 代替。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">server_loop</span>(<span class="params">mq: asyncio.Queue</span>):</span><br><span class="line">    pipe = pipeline(</span><br><span class="line">        <span class="string">&quot;text-classification&quot;</span>, model=<span class="string">&quot;TrustSafeAI/RADAR-Vicuna-7B&quot;</span>, device=<span class="string">&quot;cuda:0&quot;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        texts = []</span><br><span class="line">        rqs = []</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">with</span> asyncio.timeout(BATCH_TIMEOUT):</span><br><span class="line">                <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(BATCH_SIZE_MAX):</span><br><span class="line">                    text, rq, ctx = <span class="keyword">await</span> mq.get()</span><br><span class="line">                    texts.append(text)</span><br><span class="line">                    rqs.append(rq)</span><br><span class="line">        <span class="keyword">except</span> asyncio.TimeoutError:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> texts:</span><br><span class="line">            batch_size = <span class="built_in">len</span>(texts)</span><br><span class="line">            results = pipe(texts, batch_size=batch_size)</span><br><span class="line">            <span class="keyword">for</span> result, rq <span class="keyword">in</span> <span class="built_in">zip</span>(results, rqs):</span><br><span class="line">                rq.put_nowait(result)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.on_event(<span class="params"><span class="string">&quot;startup&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">startup</span>():</span><br><span class="line">    mq = asyncio.Queue()</span><br><span class="line">    app.mq = mq</span><br><span class="line">    asyncio.create_task(server_loop(mq))</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">analyze_and_classify</span>(<span class="params">text: <span class="built_in">str</span>, ctx: DebugContext</span>):</span><br><span class="line">    rq = asyncio.Queue()</span><br><span class="line">    <span class="keyword">await</span> app.mq.put((text, rq, ctx))</span><br><span class="line">    output = <span class="keyword">await</span> rq.get()</span><br><span class="line">    <span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
+
+<p>这里涉及到三个函数：</p>
+<ul>
+<li><code>startup</code>：钩子函数，在应用初始化后、开始接受请求前执行，用来创建<code>server_loop</code>异步任务。</li>
+<li><code>server_loop</code>：不断从<code>mq</code>中接收消息，批处理式推理，然后返回给调用者。</li>
+<li><code>analyze_and_classify</code>：处理 HTTP 请求时会多次调用这个函数，推理接口的封装。</li>
+</ul>
+<p>按照时间顺序来描述接下来会发生的事：</p>
+<ol>
+<li><code>startup</code>：创建一个“全局变量”：<code>mq = asyncio.Queue()</code>；</li>
+<li><code>server_loop</code>：调用<code>pipeline</code>函数，加载 pipeline；</li>
+<li><code>server_loop</code>：进入死循环，在时间 <code>BATCH_TIMEOUT</code> 内尝试从<code>mq</code>获取<code>BATCH_SIZE_MAX</code>个对象；</li>
+<li><code>analyze_and_classify</code>：被调用（调用者是<code>ai_detection_on_single_string</code>），创建一个<code>rq = asyncio.Queue()</code>，然后把<code>text</code>和其他消息放入<code>app.mq</code>中，然后异步等待从<code>rq</code>获取对象；</li>
+<li><code>server_loop</code>：超时或已经获取到了<code>BATCH_SIZE_MAX</code>个对象，如果对象列表非空，则对这些对象批处理推理，<code>batch_size</code>为对象的数量；</li>
+<li><code>server_loop</code>：推理完成，把结果放入对应的<code>rq</code>，进入下一轮循环；</li>
+<li><code>analyze_and_classify</code>：从<code>rq</code>中获取到对象并返回。</li>
+</ol>
+<p>在全局范围内，<code>mq</code>被创建一次，<code>rq</code>在每次调用<code>analyze_and_classify</code>时都会创建一次。创建<code>asyncio.Queue()</code>的时间开销很小，用<code>timeit</code>在我的机器上测得 2.5us。</p>
+<p>使用不同的 <code>BATCH_SIZE_MAX</code> 和 <code>BATCH_TIMEOUT</code> 进行性能测试：</p>
+<p><code>BATCH_SIZE_MAX=8,</code> <code>BATCH_TIMEOUT=0.5</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-8-BT-500.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=8,</code> <code>BATCH_TIMEOUT=0.3</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-8-BT-300.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=8,</code> <code>BATCH_TIMEOUT=0.1</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-8-BT-100.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=16</code>, <code>BATCH_TIMEOUT=0.5</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-16-BT-500.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=16</code>, <code>BATCH_TIMEOUT=0.3</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-16-BT-300.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=16</code>, <code>BATCH_TIMEOUT=0.1</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-16-BT-100.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=32</code>, <code>BATCH_TIMEOUT=0.5</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-32-BT-500.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=32</code>, <code>BATCH_TIMEOUT=0.3</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-32-BT-300.jpeg"></p>
+<p><code>BATCH_SIZE_MAX=32</code>, <code>BATCH_TIMEOUT=0.1</code>:<br><img src="/images/research-on-gpu-bound-web-server/BSM-32-BT-100.jpeg"></p>
+<p>观察可以得到以下几个结论：</p>
+<ul>
+<li>随着用户数的线性增长，RPS 增加会逐渐变慢；</li>
+<li><code>BATCH_SIZE_MAX</code>不变时，减小<code>BATCH_TIMEOUT</code>能小幅度提升 RPS，小幅度降低 RT，但是能提升 RT 的稳定性，当<code>BATCH_TIMEOUT</code>为 100ms 时尤甚；</li>
+<li><code>BATCH_TIMEOUT</code>不变时，增加<code>BATCH_SIZE_MAX</code>能提升 RPS，但是会影响 RT 的稳定性。</li>
+</ul>
+<p>尽管我们得到了这几个结论，但这也只是局限在这个实验范围内，不同的语言、实现细节、硬件规格都可能产生不同的结论。正如 Transformers 官方文档所言：</p>
+<blockquote>
+<p>Creating an inference engine is a complex topic, and the “best” solution will most likely depend on your problem space.</p>
+</blockquote>
+<p>最后放上 <code>BATCH_SIZE_MAX=16</code> <code>BATCH_TIMEOUT=0.1</code> 参数的压测结果作为结尾：</p>
+<p><img src="/images/research-on-gpu-bound-web-server/BSM-16-BT-100-final.jpeg"></p>
+
+    </div>
+    
+    <div class="post__license">
+        <p>
+            <strong>Author: </strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                Permalink: 
+            </strong>
+            <a href="http://hairlessvillager.github.io/2024/10/11/research-on-gpu-bound-web-server/">http://hairlessvillager.github.io/2024/10/11/research-on-gpu-bound-web-server/</a>
+        </p>
+        
+            <strong>
+                <p>The article is licensed under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> protocol by default.</p>
+
+            </strong>
+        
+            <strong>
+                <p>Please comply with the protocol when using it.</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Updated@2025-09-11 17:27</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2025/07/09/region-diff/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            Previous Post
+                        </div>
+                        <div class="nav__title">
+                            记录 Region Diff 开发中的一些思考
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2024/09/24/build-miniob-development-environment/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            Next Post
+                        </div>
+                        <div class="nav__title">
+                            使用 Docker 搭建 miniob 开发环境
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+     
+    <a href="#" class="button" id="b2t" aria-label="Back to Top" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2023&nbsp;-&nbsp;2025 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>

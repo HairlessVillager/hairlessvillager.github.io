@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>使用 Docker 搭建 miniob 开发环境 | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="背景学校的一门数据库课程要求在 miniob 上实现一些功能，评测方式和算法竞赛差不多，提交仓库地址和 commit hash 后评测系统会输入若干组数据，把程序输出和答案输出比较，一致则得分。 miniob 的开发环境设置比较繁琐，这里记录一下我自己的开发环境，以备不时之需。 准备工作配置 Gitee 仓库国外的 GitHub 由于众所周知的原因时常无妨访问，这里使用 Gitee 作为代码托管。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 Docker 搭建 miniob 开发环境">
+<meta property="og:url" content="http://hairlessvillager.github.io/2024/09/24/build-miniob-development-environment/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="背景学校的一门数据库课程要求在 miniob 上实现一些功能，评测方式和算法竞赛差不多，提交仓库地址和 commit hash 后评测系统会输入若干组数据，把程序输出和答案输出比较，一致则得分。 miniob 的开发环境设置比较繁琐，这里记录一下我自己的开发环境，以备不时之需。 准备工作配置 Gitee 仓库国外的 GitHub 由于众所周知的原因时常无妨访问，这里使用 Gitee 作为代码托管。">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-09-24T12:33:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T09:27:15.583Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+        <link rel="stylesheet" id="hl-default-theme" href="/css/highlight/highlight.css" media="none" >
+        
+            <link rel="stylesheet" id="hl-dark-theme" href="/css/highlight/highlight.dark.css" media="none">
+        
+    
+
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">Home</a>
+                
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
+                
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
+                
+                    <a href="/about/" class="navbar-menu button">About</a>
+                
+            </div>
+        
+        
+        
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
+
+        
+        
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">Home</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
+                
+                    <a href="/about/" class="dropdown-menu button">About</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        使用 Docker 搭建 miniob 开发环境
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2024/09/" class="post-meta__date button">Created@2024-09-24 20:33</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="toc-text">准备工作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-Gitee-%E4%BB%93%E5%BA%93"><span class="toc-text">配置 Gitee 仓库</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-VSCode"><span class="toc-text">配置 VSCode</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-Docker"><span class="toc-text">配置 Docker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91"><span class="toc-text">编译</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B"><span class="toc-text">开发流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%A8%E5%AE%BF%E4%B8%BB%E6%9C%BA%E4%B8%8A%E4%BF%AE%E6%94%B9%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="toc-text">在宿主机上修改源代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E4%BB%A3%E7%A0%81%E5%A4%8D%E5%88%B6%E5%88%B0%E5%AE%B9%E5%99%A8%E5%86%85"><span class="toc-text">源代码复制到容器内</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BF%AB%E9%80%9F%E6%9E%84%E5%BB%BA"><span class="toc-text">快速构建</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95"><span class="toc-text">本地测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%90%E4%BA%A4%E8%AF%84%E6%B5%8B"><span class="toc-text">提交评测</span></a></li></ol></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">Article Directory</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="toc-text">准备工作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-Gitee-%E4%BB%93%E5%BA%93"><span class="toc-text">配置 Gitee 仓库</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-VSCode"><span class="toc-text">配置 VSCode</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-Docker"><span class="toc-text">配置 Docker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91"><span class="toc-text">编译</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B"><span class="toc-text">开发流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%A8%E5%AE%BF%E4%B8%BB%E6%9C%BA%E4%B8%8A%E4%BF%AE%E6%94%B9%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="toc-text">在宿主机上修改源代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E4%BB%A3%E7%A0%81%E5%A4%8D%E5%88%B6%E5%88%B0%E5%AE%B9%E5%99%A8%E5%86%85"><span class="toc-text">源代码复制到容器内</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BF%AB%E9%80%9F%E6%9E%84%E5%BB%BA"><span class="toc-text">快速构建</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95"><span class="toc-text">本地测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%90%E4%BA%A4%E8%AF%84%E6%B5%8B"><span class="toc-text">提交评测</span></a></li></ol></li></ol>
+    </div>
+
+
+<article class="post post__with-toc content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>学校的一门数据库课程要求在 <a target="_blank" rel="noopener" href="https://github.com/oceanbase/miniob">miniob</a> 上实现一些功能，评测方式和算法竞赛差不多，提交仓库地址和 commit hash 后评测系统会输入若干组数据，把程序输出和答案输出比较，一致则得分。</p>
+<p>miniob 的开发环境设置比较繁琐，这里记录一下我自己的开发环境，以备不时之需。</p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="配置-Gitee-仓库"><a href="#配置-Gitee-仓库" class="headerlink" title="配置 Gitee 仓库"></a>配置 Gitee 仓库</h3><p>国外的 GitHub 由于众所周知的原因时常无妨访问，这里使用 Gitee 作为代码托管。在 Gitee 创建仓库时选择从 GitHub 克隆，地址：<a target="_blank" rel="noopener" href="https://github.com/oceanbase/miniob.git%E3%80%82">https://github.com/oceanbase/miniob.git。</a></p>
+<p>Gitee 仓库创建好后，使用<code>git clone</code>命令把仓库克隆到本地，保证 <code>push</code>&#x2F;<code>pop</code>&#x2F;<code>fetch</code> 操作无报错。</p>
+<h3 id="配置-VSCode"><a href="#配置-VSCode" class="headerlink" title="配置 VSCode"></a>配置 VSCode</h3><p>安装 C&#x2F;C++ Extension Pack 插件，主要为了实现代码跳转功能。这里亦可使用自己喜欢的 IDE。</p>
+<h3 id="配置-Docker"><a href="#配置-Docker" class="headerlink" title="配置 Docker"></a>配置 Docker</h3><p>Docker 安装好后，使用<code>docker run -d --name miniob-dev --privileged -e REPO_ADDR=&lt;your_repo_addr&gt; oceanbase/miniob</code>命令创建 miniob 的开发容器。这里的<code>&lt;your_repo_addr&gt;</code>要换成自己的仓库地址，形如<code>https://gitee.com/xxx/miniob.git</code>。容器创建时会克隆仓库到容器内。</p>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>容器创建后，使用<code>docker exec -it miniob-dev bash</code>进入容器的 Bash 环境。</p>
+<ol>
+<li>查看一下当前的位置。输入<code>pwd</code>显示当前目录是<code>/root</code>。输入<code>ls</code>查看目录下的文件&#x2F;子目录，应该有<code>docker</code>和<code>source</code>两个文件夹。</li>
+<li>输入<code>cd source/miniob</code>进入 miniob 的仓库目录。</li>
+<li>输入<code>bash build.sh</code>运行编译脚本。编译过程需要大约两分钟，无报错则说明编译成功。</li>
+<li>输入<code>./build_debug/bin/observer -f ./etc/observer.ini -P cli</code>启动 miniob 的 CLI。这里可以自由输入 SQL 测试。</li>
+</ol>
+<h2 id="开发流程"><a href="#开发流程" class="headerlink" title="开发流程"></a>开发流程</h2><p>这里最好创建两个 Terminal，一个在宿主机，一个在容器内。</p>
+<h3 id="在宿主机上修改源代码"><a href="#在宿主机上修改源代码" class="headerlink" title="在宿主机上修改源代码"></a>在宿主机上修改源代码</h3><p>略。</p>
+<h3 id="源代码复制到容器内"><a href="#源代码复制到容器内" class="headerlink" title="源代码复制到容器内"></a>源代码复制到容器内</h3><p>使用<code>docker cp ./src miniob-dev:/root/source/miniob/</code>命令复制。复制大小大概为1.8MB。</p>
+<h3 id="快速构建"><a href="#快速构建" class="headerlink" title="快速构建"></a>快速构建</h3><p>使用<code>sudo apt-get install dos2unix</code>安装格式转换工具。</p>
+<p>把以下内容写入<code>easy-build.sh</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">rm</span> observer.log.*</span><br><span class="line"><span class="built_in">rm</span> -r miniob</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> src/observer/sql/parser</span><br><span class="line">bash gen_parser.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> ../../../..</span><br><span class="line">find ./src -<span class="built_in">type</span> f -<span class="built_in">exec</span> dos2unix &#123;&#125; \;</span><br><span class="line">find ./src -<span class="built_in">type</span> f -<span class="built_in">exec</span> <span class="built_in">chmod</span> 644 &#123;&#125; \;</span><br><span class="line">bash build.sh --make -j12</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;RUN ./build_debug/bin/observer -f ./etc/observer.ini -P cli&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>然后使用<code>bash easy-build.sh</code>快速构建。</p>
+<h3 id="本地测试"><a href="#本地测试" class="headerlink" title="本地测试"></a>本地测试</h3><p><code>test/case</code>目录下有测试用例，可自行测试。</p>
+<h3 id="提交评测"><a href="#提交评测" class="headerlink" title="提交评测"></a>提交评测</h3><p>在<a target="_blank" rel="noopener" href="https://open.oceanbase.com/train?questionId=600004">训练营页面</a>点击“立即评测”，输入仓库地址、commit hash后提交，评测会需要很长时间，可在此页面查看评测结果。</p>
+
+    </div>
+    
+    <div class="post__license">
+        <p>
+            <strong>Author: </strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                Permalink: 
+            </strong>
+            <a href="http://hairlessvillager.github.io/2024/09/24/build-miniob-development-environment/">http://hairlessvillager.github.io/2024/09/24/build-miniob-development-environment/</a>
+        </p>
+        
+            <strong>
+                <p>The article is licensed under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> protocol by default.</p>
+
+            </strong>
+        
+            <strong>
+                <p>Please comply with the protocol when using it.</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Updated@2025-09-11 17:27</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/10/11/research-on-gpu-bound-web-server/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            Previous Post
+                        </div>
+                        <div class="nav__title">
+                            GPU-bound Web 程序性能优化
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2024/09/10/a-problem-in-windows-conda-zsh/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            Next Post
+                        </div>
+                        <div class="nav__title">
+                            在 Zsh 环境下配置 Conda/Mamba 踩坑记录
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+     
+    <a href="#" class="button" id="b2t" aria-label="Back to Top" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2023&nbsp;-&nbsp;2025 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>

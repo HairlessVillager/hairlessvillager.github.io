@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>NeoVim 中 Conda 环境下配置 LSP 踩坑记录 | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="问题引入笔者在 Windows 环境下使用 Anaconda 包管理软件管理 Python 的第三方库，但是一直以来 NeoVim 的 LSP 不支持 Conda 除 base 环境的其他环境的第三方包（即 envs&#x2F; 下的环境），一直以来都很困扰我。今天实在忍无可忍了，决定把这个问题探个究竟。 我使用的是 python-lsp-server 这个 LSP。nvim-lspconfig.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NeoVim 中 Conda 环境下配置 LSP 踩坑记录">
+<meta property="og:url" content="http://hairlessvillager.github.io/2024/05/06/a-problem-in-windows-conda-neovim/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="问题引入笔者在 Windows 环境下使用 Anaconda 包管理软件管理 Python 的第三方库，但是一直以来 NeoVim 的 LSP 不支持 Conda 除 base 环境的其他环境的第三方包（即 envs&#x2F; 下的环境），一直以来都很困扰我。今天实在忍无可忍了，决定把这个问题探个究竟。 我使用的是 python-lsp-server 这个 LSP。nvim-lspconfig.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-05-06T15:05:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T09:27:15.582Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+        <link rel="stylesheet" id="hl-default-theme" href="/css/highlight/highlight.css" media="none" >
+        
+            <link rel="stylesheet" id="hl-dark-theme" href="/css/highlight/highlight.dark.css" media="none">
+        
+    
+
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">Home</a>
+                
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
+                
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
+                
+                    <a href="/about/" class="navbar-menu button">About</a>
+                
+            </div>
+        
+        
+        
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
+
+        
+        
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">Home</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
+                
+                    <a href="/about/" class="dropdown-menu button">About</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        NeoVim 中 Conda 环境下配置 LSP 踩坑记录
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2024/05/" class="post-meta__date button">Created@2024-05-06 23:05</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%BC%95%E5%85%A5"><span class="toc-text">问题引入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%A8%E8%84%9A%E6%9C%AC%E9%87%8C%E6%89%93%E6%97%A5%E5%BF%97"><span class="toc-text">在脚本里打日志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%8E-pylsp-%E5%88%B0-nvim-lspconfig"><span class="toc-text">从 pylsp 到 nvim-lspconfig</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E5%88%B0%E8%84%9A%E6%9C%AC%E9%87%8C%E6%89%93%E6%97%A5%E5%BF%97"><span class="toc-text">再到脚本里打日志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#LspLog-%E5%88%B0-pylsp-%E5%86%8D%E5%88%B0-jedi-%E7%9A%84%E4%B8%80%E4%B8%AA-PR"><span class="toc-text">LspLog 到 pylsp 再到 jedi 的一个 PR</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%94%B6%E5%B0%BE%E5%B7%A5%E4%BD%9C"><span class="toc-text">收尾工作</span></a></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">Article Directory</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%BC%95%E5%85%A5"><span class="toc-text">问题引入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%A8%E8%84%9A%E6%9C%AC%E9%87%8C%E6%89%93%E6%97%A5%E5%BF%97"><span class="toc-text">在脚本里打日志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%8E-pylsp-%E5%88%B0-nvim-lspconfig"><span class="toc-text">从 pylsp 到 nvim-lspconfig</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E5%88%B0%E8%84%9A%E6%9C%AC%E9%87%8C%E6%89%93%E6%97%A5%E5%BF%97"><span class="toc-text">再到脚本里打日志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#LspLog-%E5%88%B0-pylsp-%E5%86%8D%E5%88%B0-jedi-%E7%9A%84%E4%B8%80%E4%B8%AA-PR"><span class="toc-text">LspLog 到 pylsp 再到 jedi 的一个 PR</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%94%B6%E5%B0%BE%E5%B7%A5%E4%BD%9C"><span class="toc-text">收尾工作</span></a></li></ol>
+    </div>
+
+
+<article class="post post__with-toc content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <h2 id="问题引入"><a href="#问题引入" class="headerlink" title="问题引入"></a>问题引入</h2><p>笔者在 Windows 环境下使用 Anaconda 包管理软件管理 Python 的第三方库，但是一直以来 NeoVim 的 LSP 不支持 Conda 除 base 环境的其他环境的第三方包（即 envs&#x2F; 下的环境），一直以来都很困扰我。今天实在忍无可忍了，决定把这个问题探个究竟。</p>
+<p>我使用的是 <a target="_blank" rel="noopener" href="https://github.com/python-lsp/python-lsp-server">python-lsp-server</a> 这个 LSP。<code>nvim-lspconfig.lua</code> 部分配置展示：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> &#123;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&#x27;neovim/nvim-lspconfig&#x27;</span>,</span><br><span class="line">        <span class="built_in">config</span> = <span class="function"><span class="keyword">function</span><span class="params">()</span></span></span><br><span class="line">            <span class="comment">-- Setup language servers.</span></span><br><span class="line">            <span class="keyword">local</span> lspconfig = <span class="built_in">require</span>(<span class="string">&#x27;lspconfig&#x27;</span>)</span><br><span class="line">            <span class="keyword">local</span> coq = <span class="built_in">require</span>(<span class="string">&quot;coq&quot;</span>)</span><br><span class="line">            lspconfig.pylsp.setup(coq.lsp_ensure_capabilities &#123;</span><br><span class="line">                cmd = &#123;</span><br><span class="line">                    <span class="string">&quot;D:/Anaconda/anaconda3/Scripts/pylsp.exe&quot;</span>,</span><br><span class="line">                &#125;,</span><br><span class="line">                settings = &#123;</span><br><span class="line">                    pylsp = &#123;</span><br><span class="line">                        plugins = &#123;</span><br><span class="line">                            pycodestyle  = &#123;</span><br><span class="line">                                maxLineLength = <span class="number">120</span>,</span><br><span class="line">                            &#125;,</span><br><span class="line">                            pydocstyle = &#123;</span><br><span class="line">                                convention = <span class="string">&quot;numpy&quot;</span>,</span><br><span class="line">                            &#125;,</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;)</span><br><span class="line">            ...</span><br></pre></td></tr></table></figure>
+
+<h2 id="在脚本里打日志"><a href="#在脚本里打日志" class="headerlink" title="在脚本里打日志"></a>在脚本里打日志</h2><p>省略中间的各种弯路，最终在 python-lsp-server 的 GitHub 上找到一个相关的 discussions <a target="_blank" rel="noopener" href="https://github.com/python-lsp/python-lsp-server/discussions/177">#177</a>。<a target="_blank" rel="noopener" href="https://github.com/python-lsp/python-lsp-server/discussions/177#discussioncomment-2443852">@skeledrew</a> 提出他写了一个<a target="_blank" rel="noopener" href="https://gitlab.com/-/snippets/2279333">脚本</a>，能替换 <code>pylsp/workspace.py</code> 中的函数，使其找到祖先路径下的 <code>.env</code> 文件并加载。</p>
+<p>这个脚本质量不算很高，很多写法不规范，但是最大的问题是他根本就不能工作，而且我打开 NeoVim 后 CPU 占用飙升。好在作者给了一个 <a target="_blank" rel="noopener" href="https://gitlab.com/-/snippets/2279333#L149">write</a> 函数，可以勉强当日志用。确定到问题出在后面的 while 循环是死循环，<code>cur_path</code>变量一直是<code>WindowsPath(&#39;e:/&#39;)</code>。当然很容易通过计数器变量来限制循环次数，这个问题先按下不表。</p>
+<p>观察日志输出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">No activate command found in e:\code\python\.env</span><br><span class="line">Loopping... cur_path=WindowsPath(&#x27;e:/code/python&#x27;)</span><br><span class="line">Loopping... cur_path=WindowsPath(&#x27;e:/code&#x27;)</span><br><span class="line">Loopping... cur_path=WindowsPath(&#x27;e:/&#x27;)</span><br><span class="line">Loopping... cur_path=WindowsPath(&#x27;e:/&#x27;)</span><br><span class="line">Loopping... cur_path=WindowsPath(&#x27;e:/&#x27;)</span><br><span class="line">Loopping... cur_path=WindowsPath(&#x27;e:/&#x27;)</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>我的工作目录在 <code>E:/code/python/chatcollector/chatcollector/</code>，这里显然是有问题的，多走了两次父目录。经过我不断在 pylsp 包中打日志，最后确认为 <code>pylsp.python_lsp.PythonLSPServer.m_initialize</code> 的入参为 <code>E:/code/python/chatcollector/</code>，是正常工作目录的一级父目录。这说明调用 pylsp 的调用者在传参的时候出现了问题。</p>
+<h2 id="从-pylsp-到-nvim-lspconfig"><a href="#从-pylsp-到-nvim-lspconfig" class="headerlink" title="从 pylsp 到 nvim-lspconfig"></a>从 pylsp 到 nvim-lspconfig</h2><p>找这个调用者的过程也是极其艰辛，以 <code>m_initialize</code> 为关键词是无法在一般的搜索引擎上找到结果的。最后还是在 <code>pylsp.workspace.Workspace</code> 找到了 <code>M_INITIALIZE_PROGRESS</code> 这个类属性，对应的值为 <code>&quot;window/workDoneProgress/create&quot;</code>。我注意到这里的字符串格式应该是和 LSP 相关，于是在 NeoVim 中使用命令 <code>:LspLog</code> 打开日志，并且把日志等级设为 DEBUG。最后找到了多条形如以下的日志：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[DEBUG][2024-05-06 15:14:07] .../vim/lsp/rpc.lua:387	&quot;rpc.receive&quot;	&#123;  id = &quot;a81c18d5-a48f-4ea6-bc76-3fb014022ebd&quot;,  jsonrpc = &quot;2.0&quot;,  method = &quot;window/workDoneProgress/create&quot;,  params = &#123;    token = &quot;3d640408-5c1f-4e8f-9a73-9fe2bf4c13e5&quot;  &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后我联想到我的 pylsp 是配置在 <a target="_blank" rel="noopener" href="https://github.com/neovim/nvim-lspconfig">neovim&#x2F;nvim-lspconfig</a> 上的，于是打开 neovim&#x2F;nvim-lspconfig 的默认 pylsp 配置，找到了以下代码：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root_dir = <span class="function"><span class="keyword">function</span><span class="params">(fname)</span></span></span><br><span class="line">  <span class="keyword">local</span> root_files = &#123;</span><br><span class="line">    <span class="string">&#x27;pyproject.toml&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;setup.py&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;setup.cfg&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;requirements.txt&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;Pipfile&#x27;</span>,</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> util.root_pattern(<span class="built_in">unpack</span>(root_files))(fname) <span class="keyword">or</span> util.find_git_ancestor(fname)</span><br><span class="line"><span class="keyword">end</span>,</span><br></pre></td></tr></table></figure>
+
+<p>它的意思是，从当前的目录向祖先方向找，如果这个目录包含 <code>pyproject.toml</code> 之类的文件就判断它为工作目录。</p>
+<p>修改如下：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span> util = <span class="built_in">require</span>(<span class="string">&#x27;lspconfig.util&#x27;</span>)</span><br><span class="line">...</span><br><span class="line">    root_dir = <span class="function"><span class="keyword">function</span><span class="params">(fname)</span></span></span><br><span class="line">        <span class="keyword">local</span> root_files = &#123;</span><br><span class="line">            <span class="string">&#x27;.env&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;pyproject.toml&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;setup.py&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;setup.cfg&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;requirements.txt&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;Pipfile&#x27;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> util.root_pattern(<span class="built_in">unpack</span>(root_files))(fname) <span class="keyword">or</span> util.find_git_ancestor(fname)</span><br><span class="line">    <span class="keyword">end</span>,</span><br></pre></td></tr></table></figure>
+
+<h2 id="再到脚本里打日志"><a href="#再到脚本里打日志" class="headerlink" title="再到脚本里打日志"></a>再到脚本里打日志</h2><p>用上文提到的脚本替换 <code>pylsp/workspace.py</code> 文件后发现，实际使用时还是无法提示，打开日志 <code>pylsp_env_path_patcher.log</code> 显示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Error getting env list: FileNotFoundError(2, &#x27;系统找不到指定的文件。&#x27;, None, 2, None)</span><br></pre></td></tr></table></figure>
+
+<p>发现原来是通过子进程系统调用 <code>conda info -e</code> 时报错，我 Conda 没加到系统路径里。用绝对路径替代之。结果又是死循环，加计数器和日志调试，发现中间有一次循环中 <code>env_fp=WindowsPath(&#39;e:/code/python/chatcollector/chatcollector/.env&#39;)</code>，这里确实是我 .env 文件的位置，但是它忽略了，原因是 “No python interpreter at D:\Anaconda\anaconda3\envs\django”。关键代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> (env_path / <span class="string">&quot;bin/python&quot;</span>).is_file():</span><br><span class="line">    write(<span class="string">f&quot;No python interpreter at <span class="subst">&#123;env_path&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">continue</span></span><br></pre></td></tr></table></figure>
+
+<p>这里应该是 Linux 系统下的写法，移植到 Windows 下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> (env_path / <span class="string">&quot;python.exe&quot;</span>).is_file():</span><br><span class="line">    write(<span class="string">f&quot;No python interpreter at <span class="subst">&#123;env_path&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">continue</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="LspLog-到-pylsp-再到-jedi-的一个-PR"><a href="#LspLog-到-pylsp-再到-jedi-的一个-PR" class="headerlink" title="LspLog 到 pylsp 再到 jedi 的一个 PR"></a>LspLog 到 pylsp 再到 jedi 的一个 PR</h2><p>依旧没有语法提示。查看 <code>:LspLog</code>（这里已经将\r\n转义并且用正确的编码打开）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">[ERROR][2024-05-06 16:20:42] .../vim/lsp/rpc.lua:734	&quot;rpc&quot;	&quot;D:\\Anaconda\\anaconda3\\Scripts\\pylsp.exe&quot;	&quot;stderr&quot;	&#x27;2024-05-06 16:20:42,165 中国标准时间 - WARNING - pylsp.config.config - Failed to load hook pylsp_hover: D:\\Anaconda\\anaconda3\\envs\\django\\Scripts\\python.exe seems to be missing.</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pylsp\\config\\config.py&quot;, line 39, in _hookexec</span><br><span class="line">    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)</span><br><span class="line">           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_manager.py&quot;, line 327, in traced_hookexec</span><br><span class="line">    return outcome.get_result()</span><br><span class="line">           ^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_result.py&quot;, line 60, in get_result</span><br><span class="line">    raise ex[1].with_traceback(ex[2])</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_result.py&quot;, line 33, in from_call</span><br><span class="line">    result = func()</span><br><span class="line">             ^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_manager.py&quot;, line 324, in &lt;lambda&gt;</span><br><span class="line">    lambda: oldcall(hook_name, hook_impls, kwargs, firstresult)</span><br><span class="line">            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_callers.py&quot;, line 60, in _multicall</span><br><span class="line">    return outcome.get_result()</span><br><span class="line">           ^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_result.py&quot;, line 60, in get_result</span><br><span class="line">    raise ex[1].with_traceback(ex[2])</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pluggy\\_callers.py&quot;, line 39, in _multicall</span><br><span class="line">    res = hook_impl.function(*args)</span><br><span class="line">          ^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pylsp\\plugins\\hover.py&quot;, line 14, in pylsp_hover</span><br><span class="line">    definitions = document.jedi_script(use_document_path=True).infer(**code_position)</span><br><span class="line">                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pylsp\\workspace.py&quot;, line 33, in wrapper</span><br><span class="line">    return method(self, *args, **kwargs)</span><br><span class="line">           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pylsp\\workspace.py&quot;, line 534, in jedi_script</span><br><span class="line">    self.get_enviroment(environment_path, env_vars=env_vars)</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\pylsp\\workspace.py&quot;, line 566, in get_enviroment</span><br><span class="line">    environment = jedi.api.environment.create_environment(</span><br><span class="line">                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\jedi\\api\\environment.py&quot;, line 367, in create_environment</span><br><span class="line">    return Environment(_get_executable_path(path, safe=safe), env_vars=env_vars)</span><br><span class="line">                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><br><span class="line">  File &quot;D:\\Anaconda\\anaconda3\\Lib\\site-packages\\jedi\\api\\environment.py&quot;, line 380, in _get_executable_path</span><br><span class="line">    raise InvalidPythonEnvironment(&quot;%s seems to be missing.&quot; % python)</span><br><span class="line">jedi.api.environment.InvalidPythonEnvironment: D:\\Anaconda\\anaconda3\\envs\\django\\Scripts\\python.exe seems to be missing.</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>我的 <code>python.exe</code> 路径是 <code>D:\\Anaconda\\anaconda3\\envs\\django\\python.exe</code>，观察代码发现还是 pylsp 的问题。定位到以下代码：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">environment_path = jedi_settings.get(<span class="string">&quot;environment&quot;</span>) <span class="keyword">or</span> get_conda_env_path(<span class="variable language_">self</span>)</span><br></pre></td></tr></table></figure>
+
+<p>打个日志，输出为 “environment_path&#x3D;’D:\Anaconda\anaconda3\envs\django’”，结果没有问题。看来需要怀疑 jedi 了。定位到以下代码：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_get_executable_path</span>(<span class="params">path, safe=<span class="literal">True</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Returns None if it&#x27;s not actually a virtual env.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> os.name == <span class="string">&#x27;nt&#x27;</span>:</span><br><span class="line">        python = os.path.join(path, <span class="string">&#x27;Scripts&#x27;</span>, <span class="string">&#x27;python.exe&#x27;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        python = os.path.join(path, <span class="string">&#x27;bin&#x27;</span>, <span class="string">&#x27;python&#x27;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(python):</span><br><span class="line">        <span class="keyword">raise</span> InvalidPythonEnvironment(<span class="string">&quot;%s seems to be missing.&quot;</span> % python)</span><br><span class="line"></span><br><span class="line">    _assert_safe(python, safe)</span><br><span class="line">    <span class="keyword">return</span> python</span><br></pre></td></tr></table></figure>
+
+<p>看了一下，好像没有别人提出这个问题，于是顺便拉了个 <a target="_blank" rel="noopener" href="https://github.com/davidhalter/jedi/pull/1994">PR</a>。</p>
+<p>再试了一下，好像没问题了。</p>
+<h2 id="收尾工作"><a href="#收尾工作" class="headerlink" title="收尾工作"></a>收尾工作</h2><p>首先重新安装以下被刚刚的日志破坏得千疮百孔的包：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">python-lsp-server</span><br><span class="line">jedi</span><br></pre></td></tr></table></figure>
+<p>然后需要打两个补丁，首先运行脚本 <code>pyls_env_path_patcher.py</code>，给 <code>pylsp\workspace.py</code> 打补丁，然后查看我提的 <a target="_blank" rel="noopener" href="https://github.com/davidhalter/jedi/pull/1994/files">PR</a>，按照 diff 手动修改代码打补丁（如果你的 jedi 版本高于 0.19.1 可能不用修改），最后在 NeoVim 输入命令 <code>:LspRestart</code> 重启 LSP，就能修复这个问题了。</p>
+
+    </div>
+    
+    <div class="post__license">
+        <p>
+            <strong>Author: </strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                Permalink: 
+            </strong>
+            <a href="http://hairlessvillager.github.io/2024/05/06/a-problem-in-windows-conda-neovim/">http://hairlessvillager.github.io/2024/05/06/a-problem-in-windows-conda-neovim/</a>
+        </p>
+        
+            <strong>
+                <p>The article is licensed under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> protocol by default.</p>
+
+            </strong>
+        
+            <strong>
+                <p>Please comply with the protocol when using it.</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Updated@2025-09-11 17:27</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/06/14/research-on-scrapy-scheduling-algorithm/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            Previous Post
+                        </div>
+                        <div class="nav__title">
+                            Scrapy 调度算法研究
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2023/12/23/a-failed-django-contribution/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            Next Post
+                        </div>
+                        <div class="nav__title">
+                            记一次失败的 Django Contribution
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+     
+    <a href="#" class="button" id="b2t" aria-label="Back to Top" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2023&nbsp;-&nbsp;2025 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>

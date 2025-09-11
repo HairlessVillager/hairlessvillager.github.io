@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+
+    
+
+    <!-- 渲染优化 -->
+    <meta name="renderer" content="webkit">
+    <meta name="force-rendering" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="HandheldFriendly" content="True" >
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!--icon-->
+
+    
+        <link rel="shortcut icon" href="/favicon/favicon.ico">
+    
+    
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    
+    
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    
+    
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    
+    
+
+
+    <!-- meta -->
+
+
+<title>Python Web 应用并发测试 | HairlessVillager&#39;s Blog</title>
+
+
+
+
+
+    <!-- OpenGraph -->
+ 
+    <meta name="description" content="网上常听到这样一种论调：Python 太慢，因而不适合做 Web 开发。为了详细了解 Python 在实用场景下的性能，笔者做了一个简单的博客系统，支持简单的博客展示，提供上传、修改的接口，然后尝试在迭代过程中提高并发性能。 项目已开源在 GitHub。这个系统最终的实现是 MongoDB + Redis + local cache 作为分级存储，尽可能使用异步逻辑，使用 Uvicorn 的多进程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python Web 应用并发测试">
+<meta property="og:url" content="http://hairlessvillager.github.io/2024/08/11/benchtest-on-python-web-application/index.html">
+<meta property="og:site_name" content="HairlessVillager&#39;s Blog">
+<meta property="og:description" content="网上常听到这样一种论调：Python 太慢，因而不适合做 Web 开发。为了详细了解 Python 在实用场景下的性能，笔者做了一个简单的博客系统，支持简单的博客展示，提供上传、修改的接口，然后尝试在迭代过程中提高并发性能。 项目已开源在 GitHub。这个系统最终的实现是 MongoDB + Redis + local cache 作为分级存储，尽可能使用异步逻辑，使用 Uvicorn 的多进程">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/ef25cb1-2000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/ef25cb1-1000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/84f2587-1000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/b2b6168-1000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/9ae9101-1000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/29fc343-1000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/fae58bb-1000.jpeg">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/Screenshot-2024-09-10-115850.png">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/Screenshot-2024-09-10-115933.png">
+<meta property="og:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/Screenshot-2024-09-10-115949.png">
+<meta property="article:published_time" content="2024-08-11T08:59:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T09:27:15.582Z">
+<meta property="article:author" content="HairlessVillager">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://hairlessvillager.github.io/images/benchtest-on-python-web-application/ef25cb1-2000.jpeg">
+
+
+    
+<link rel="stylesheet" href="/css/style/main.css">
+ 
+
+    
+    
+        <link rel="stylesheet" id="hl-default-theme" href="/css/highlight/highlight.css" media="none" >
+        
+            <link rel="stylesheet" id="hl-dark-theme" href="/css/highlight/highlight.dark.css" media="none">
+        
+    
+
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/style/dark.css">
+
+    
+<script src="/js/darkmode.js"></script>
+
+
+
+     
+
+    <!-- custom head -->
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+    <body>
+        <div id="app" tabindex="-1">
+            <header class="header">
+    <div class="header__left">
+        <a href="/" class="button">
+            <span class="logo__text">HairlessVillager&#39;s Blog</span>
+        </a>
+    </div>
+    <div class="header__right">
+        
+            <div class="navbar__menus">
+                
+                    <a href="/" class="navbar-menu button">Home</a>
+                
+                    <a href="/archives/" class="navbar-menu button">Archives</a>
+                
+                    <a href="/friends/" class="navbar-menu button">Friends</a>
+                
+                    <a href="/about/" class="navbar-menu button">About</a>
+                
+            </div>
+        
+        
+        
+    <a href="/search/" id="btn-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="32"><path d="M192 448c0-141.152 114.848-256 256-256s256 114.848 256 256-114.848 256-256 256-256-114.848-256-256z m710.624 409.376l-206.88-206.88A318.784 318.784 0 0 0 768 448c0-176.736-143.264-320-320-320S128 271.264 128 448s143.264 320 320 320a318.784 318.784 0 0 0 202.496-72.256l206.88 206.88 45.248-45.248z"></path></svg>
+    </a>
+
+
+        
+        
+    <a href="javaScript:void(0);" id="btn-toggle-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </a>
+
+
+        
+            <a class="dropdown-icon button" id="btn-dropdown" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width='24' height='24' fill="none" stroke="currentColor" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M3.314,4.8h13.372c0.41,0,0.743-0.333,0.743-0.743c0-0.41-0.333-0.743-0.743-0.743H3.314c-0.41,0-0.743,0.333-0.743,0.743C2.571,4.467,2.904,4.8,3.314,4.8z M16.686,15.2H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,15.2,16.686,15.2z M16.686,9.257H3.314c-0.41,0-0.743,0.333-0.743,0.743s0.333,0.743,0.743,0.743h13.372c0.41,0,0.743-0.333,0.743-0.743S17.096,9.257,16.686,9.257z"></path></svg></a>
+            <div class="dropdown-menus" id="dropdown-menus">
+                
+                    <a href="/" class="dropdown-menu button">Home</a>
+                
+                    <a href="/archives/" class="dropdown-menu button">Archives</a>
+                
+                    <a href="/friends/" class="dropdown-menu button">Friends</a>
+                
+                    <a href="/about/" class="dropdown-menu button">About</a>
+                
+            </div>
+        
+    </div>
+</header>
+
+
+            <main class="main">
+    
+
+<div class="post-title">
+    <h1 class="post-title__text">
+        Python Web 应用并发测试
+    </h1>
+    <div class="post-title__meta">
+        <a href="/archives/2024/08/" class="post-meta__date button">Created@2024-08-11 16:59</a>
+        
+ 
+        
+    
+    
+
+
+ 
+
+ 
+    </div>
+</div>
+
+
+    <aside class="post-side">
+        <div class="post-side__toc">
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E6%9E%81%E9%99%90"><span class="toc-text">性能极限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E5%AE%9E%E7%8E%B0"><span class="toc-text">最终实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A7%BB%E9%99%A4%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98"><span class="toc-text">移除本地缓存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A7%BB%E9%99%A4-Redis-%E7%BC%93%E5%AD%98"><span class="toc-text">移除 Redis 缓存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8A%8A-MongoDB-%E6%8D%A2%E6%88%90-Postgres"><span class="toc-text">把 MongoDB 换成 Postgres</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E8%BF%9B%E7%A8%8B%E5%8F%98%E5%8D%95%E8%BF%9B%E7%A8%8B"><span class="toc-text">多进程变单进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A7%BB%E9%99%A4%E5%BC%82%E6%AD%A5"><span class="toc-text">移除异步</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%91%E6%8E%A7"><span class="toc-text">监控</span></a></li></ol>
+        </div>
+    </aside>
+    <a class="btn-toc button" id="btn-toc" tabindex="0">
+        <svg viewBox="0 0 1024 1024" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M128 256h64V192H128zM320 256h576V192H320zM128 544h64v-64H128zM320 544h576v-64H320zM128 832h64v-64H128zM320 832h576v-64H320z" fill="currentColor"></path>
+        </svg>
+    </a>
+    <div class="toc-menus" id="toc-menus">
+        <div class="toc-title">Article Directory</div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E6%9E%81%E9%99%90"><span class="toc-text">性能极限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E5%AE%9E%E7%8E%B0"><span class="toc-text">最终实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A7%BB%E9%99%A4%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98"><span class="toc-text">移除本地缓存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A7%BB%E9%99%A4-Redis-%E7%BC%93%E5%AD%98"><span class="toc-text">移除 Redis 缓存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8A%8A-MongoDB-%E6%8D%A2%E6%88%90-Postgres"><span class="toc-text">把 MongoDB 换成 Postgres</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E8%BF%9B%E7%A8%8B%E5%8F%98%E5%8D%95%E8%BF%9B%E7%A8%8B"><span class="toc-text">多进程变单进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A7%BB%E9%99%A4%E5%BC%82%E6%AD%A5"><span class="toc-text">移除异步</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%91%E6%8E%A7"><span class="toc-text">监控</span></a></li></ol>
+    </div>
+
+
+<article class="post post__with-toc content-card">
+    <div class="post__header"></div>
+    <div class="post__content">
+        <p>网上常听到这样一种论调：Python 太慢，因而不适合做 Web 开发。为了详细了解 Python 在实用场景下的性能，笔者做了一个简单的博客系统，支持简单的博客展示，提供上传、修改的接口，然后尝试在迭代过程中提高并发性能。</p>
+<p>项目已开源在 <a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog">GitHub</a>。这个系统最终的实现是 MongoDB + Redis + local cache 作为分级存储，尽可能使用异步逻辑，使用 Uvicorn 的多进程提高效率。为了直观地看到性能的变化，本文按照倒序的方式来编排。</p>
+<p>测试的具体实现就是用 locust 模仿若干用户并发访问一个指定的博客，见项目下的 <code>bench.py</code> 文件。</p>
+<p>测试硬件条件：</p>
+<ul>
+<li>CPU：2 核</li>
+<li>内存：2GB</li>
+<li>带宽：100Mbps</li>
+</ul>
+<h2 id="性能极限"><a href="#性能极限" class="headerlink" title="性能极限"></a>性能极限</h2><p><img src="/images/benchtest-on-python-web-application/ef25cb1-2000.jpeg"></p>
+<p>用最终实现测得极限性能，前期最大 RPS 在 2500 左右，然后系统变得非常不稳定，此时有 2000 个用户。因此以下测试均使用 1000 个用户作为测试条件。</p>
+<h2 id="最终实现"><a href="#最终实现" class="headerlink" title="最终实现"></a>最终实现</h2><p><img src="/images/benchtest-on-python-web-application/ef25cb1-1000.jpeg"></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog/tree/ef25cb13541aee3a749c835d12b39f3f6c1e041a">ef25cb1</a></p>
+<ul>
+<li>RPS ~ 2300</li>
+<li>RTp50 ~ 200ms</li>
+<li>RTp95 ~ 1300ms</li>
+</ul>
+<p>后面一段异常的数据可能是压测主机不太稳定。</p>
+<h2 id="移除本地缓存"><a href="#移除本地缓存" class="headerlink" title="移除本地缓存"></a>移除本地缓存</h2><p><img src="/images/benchtest-on-python-web-application/84f2587-1000.jpeg"></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog/tree/84f2587b874a82efa7dc1cce514e333c21395acd">84f2587</a></p>
+<ul>
+<li>RPS ~ 1300</li>
+<li>RTp50 ~ 300ms</li>
+<li>RTP95 ~ 3300ms</li>
+</ul>
+<p>本地缓存（local cache）其实就是 Python 里一个字典类型的全局变量。移除后的最高层级缓存是 Redis 实例，在读取数据时必须经过网络通信，所以这里的性能下降了很多。</p>
+<p>中间一段异常数据原因暂未知，忘记拿日志了😭</p>
+<h2 id="移除-Redis-缓存"><a href="#移除-Redis-缓存" class="headerlink" title="移除 Redis 缓存"></a>移除 Redis 缓存</h2><p><img src="/images/benchtest-on-python-web-application/b2b6168-1000.jpeg"></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog/tree/b2b61685406f56167896eb382920c06e0a2b954d">b2b6168</a></p>
+<ul>
+<li>RPS ~ 1000</li>
+<li>RTp50 ~ 300ms</li>
+<li>RTp95 ~ 3300ms</li>
+</ul>
+<p>移除 Redis 缓存后，所有读请求必须经过 MongoDB 数据库，但是这里的 RPS 并没有降低多少。猜测原因是无论从 Redis 读还是从 MongoDB 读，大部分的时间都花在了网络通信上。</p>
+<h2 id="把-MongoDB-换成-Postgres"><a href="#把-MongoDB-换成-Postgres" class="headerlink" title="把 MongoDB 换成 Postgres"></a>把 MongoDB 换成 Postgres</h2><p><img src="/images/benchtest-on-python-web-application/9ae9101-1000.jpeg"></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog/tree/9ae91017b1e48e0b4f86cb969b8546b819d86f56">9ae9101</a></p>
+<ul>
+<li>RPS ~ 510</li>
+<li>RTp50 ~ 2000ms</li>
+<li>RTp95 ~ 5000ms</li>
+</ul>
+<p>MongoDB 属于 NoSQL 数据库。相比于传统的关系型数据库，NoSQL 不支持事务，没有 Schema，只保证最终一致性，好处是带来了一定的性能提升。可以看到把数据库换成关系型数据库后，性能显著下降。</p>
+<p>当然 Postgres 也有 NoSQL 特性，这里没有启用。</p>
+<h2 id="多进程变单进程"><a href="#多进程变单进程" class="headerlink" title="多进程变单进程"></a>多进程变单进程</h2><p><img src="/images/benchtest-on-python-web-application/29fc343-1000.jpeg"></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog/tree/29fc343653cfd63167a2880a7ad07238dab600a3">29fc343</a></p>
+<ul>
+<li>RPS ~ 220</li>
+<li>RTp50 ~ 4000ms</li>
+<li>RTp95 ~ 12000ms</li>
+</ul>
+<p>服务器只有两个核心，这里我只开了两个进程。变成单进程后性能确实减半了。</p>
+<h2 id="移除异步"><a href="#移除异步" class="headerlink" title="移除异步"></a>移除异步</h2><p><img src="/images/benchtest-on-python-web-application/fae58bb-1000.jpeg"></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/HairlessVillager/myblog/tree/fae58bb3ad794559e899ee1f262344fca3a9b13c">fae58bb</a></p>
+<ul>
+<li>RPS ~ 180</li>
+<li>RTp50 ~ 6000ms</li>
+<li>RTp95 ~ 6000ms</li>
+</ul>
+<p>这个结果比较奇怪，为什么移除异步后 RPS 变化还没有 RTp95 变化大。</p>
+<h2 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h2><p>最后附上服务器的监控。</p>
+<p><img src="/images/benchtest-on-python-web-application/Screenshot-2024-09-10-115850.png"></p>
+<p><img src="/images/benchtest-on-python-web-application/Screenshot-2024-09-10-115933.png"></p>
+<p><img src="/images/benchtest-on-python-web-application/Screenshot-2024-09-10-115949.png"></p>
+
+    </div>
+    
+    <div class="post__license">
+        <p>
+            <strong>Author: </strong>HairlessVillager
+        </p>
+        <p>
+            <strong>
+                Permalink: 
+            </strong>
+            <a href="http://hairlessvillager.github.io/2024/08/11/benchtest-on-python-web-application/">http://hairlessvillager.github.io/2024/08/11/benchtest-on-python-web-application/</a>
+        </p>
+        
+            <strong>
+                <p>The article is licensed under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a> protocol by default.</p>
+
+            </strong>
+        
+            <strong>
+                <p>Please comply with the protocol when using it.</p>
+
+            </strong>
+        
+    </div>
+ 
+    <div class="post-footer__meta"><p>Updated@2025-09-11 17:27</p></div> 
+    <div class="post-entry__tags"></div> 
+</article>
+
+
+    <div class="nav">
+        <div class="nav__prev">
+            
+                <a href="/2024/09/10/a-problem-in-windows-conda-zsh/" class="nav__link">
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M589.088 790.624L310.464 512l278.624-278.624 45.248 45.248L400.96 512l233.376 233.376z" fill="#808080"></path></svg>
+                    </div>
+                    <div>
+                        <div class="nav__label">
+                            Previous Post
+                        </div>
+                        <div class="nav__title">
+                            在 Zsh 环境下配置 Conda/Mamba 踩坑记录
+                        </div>
+                    </div>
+                </a>
+            
+        </div>
+        <div class="nav__next">
+            
+                <a href="/2024/06/14/research-on-scrapy-scheduling-algorithm/" class="nav__link">
+                    <div>
+                        <div class="nav__label">
+                            Next Post
+                        </div>
+                        <div class="nav__title">
+                            Scrapy 调度算法研究
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M434.944 790.624l-45.248-45.248L623.04 512l-233.376-233.376 45.248-45.248L713.568 512z" fill="#808080"></path></svg>
+                    </div>
+                </a>
+            
+        </div>
+    </div>
+
+
+
+
+
+</main>
+
+            <footer class="footer">
+     
+    <a href="#" class="button" id="b2t" aria-label="Back to Top" title="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="32" height="32">
+            <path d="M233.376 722.752L278.624 768 512 534.624 745.376 768l45.248-45.248L512 444.128zM192 352h640V288H192z" fill="currentColor"></path>
+        </svg>
+    </a>
+
+    
+
+
+    
+     
+ 
+
+ 
+    
+        
+        <p class="footer-copyright">
+            Copyright © 2023&nbsp;-&nbsp;2025 <a href="/">HairlessVillager&#39;s Blog</a>
+        </p>
+    
+    
+    <p>Powered by <a href="https://hexo.io" target="_blank">Hexo</a> | Theme - <a href="https://github.com/ChrAlpha/hexo-theme-cards" target="_blank">Cards</a></p>
+</footer>
+
+        </div>
+         
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+    
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+
+    </body>
+</html>
